@@ -1,4 +1,7 @@
 # QlikView Desktop MCP Bridge
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Java 21](https://img.shields.io/badge/Java-21-orange.svg)](https://www.oracle.com/java/technologies/downloads/#java21)
+[![Spring Boot 4](https://img.shields.io/badge/Spring%20Boot-4.0-6DB33F.svg)](https://spring.io/projects/spring-boot)
 
 A read-only [MCP](https://modelcontextprotocol.io) server that lets AI coding assistants
 (Claude Code, Claude Desktop, GitHub Copilot in Agent mode, Cursor, or any other MCP client)
