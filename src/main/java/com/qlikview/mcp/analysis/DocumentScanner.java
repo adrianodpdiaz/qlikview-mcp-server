@@ -78,7 +78,7 @@ public class DocumentScanner {
 
     private Optional<DocumentInfo> toDocumentInfo(Path path, BasicFileAttributes attrs) {
         try {
-            boolean hasPrj = Files.isDirectory(prjFolderFor(path));
+            boolean hasPrj = Files.isDirectory(PrjFolder.forDocument(path));
             return Optional.of(new DocumentInfo(
                 path.getFileName().toString(),
                 path.toAbsolutePath().normalize(),
@@ -88,17 +88,6 @@ public class DocumentScanner {
         } catch (RuntimeException e) {
             return Optional.empty();
         }
-    }
-
-    /**
-     * QlikView writes a document's structural export to a sibling folder named
-     * {@code <documentName>-prj} (e.g. {@code report.qvw} -> {@code report-prj}).
-     */
-    private static Path prjFolderFor(Path documentPath) {
-        String fileName = documentPath.getFileName().toString();
-        int dot = fileName.lastIndexOf('.');
-        String baseName = dot < 0 ? fileName : fileName.substring(0, dot);
-        return documentPath.resolveSibling(baseName + "-prj");
     }
 
     private static boolean hasDocumentExtension(Path path) {

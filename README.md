@@ -2,8 +2,22 @@
 
 A read-only [MCP](https://modelcontextprotocol.io) server that gives any MCP-capable client
 (Claude Code, Claude Desktop, GitHub Copilot in Agent mode, Cursor, or a custom agent) access to a
-QlikView Desktop document. Currently implemented: evaluating an expression against the document's
-currently loaded data and selections.
+QlikView Desktop document.
+
+## Tools
+
+| Tool | What it does | Needs |
+|---|---|---|
+| `list_documents` | Lists `.qvw`/`.qvf` files under the allowlisted roots | File system only |
+| `get_script` | Returns a document's load script | The document's `-prj` export folder (see below) |
+| `evaluate` | Evaluates a QlikView expression against the document's currently loaded data and selections | QlikView Desktop installed, licensed, and running, with the document open or reachable |
+
+### The `-prj` export folder
+
+`get_script` reads from a `<document>-prj` folder QlikView writes next to the document on save -
+but only if that folder already exists at save time; QlikView does not create it itself. To enable
+it for a document: create an empty folder named `<documentName>-prj` next to the `.qvw`/`.qvf`
+file, then open and save the document once in QlikView Desktop.
 
 ## Windows only
 
@@ -19,7 +33,6 @@ What each stage needs:
 | Compile | Java 21 and Maven only - works on any OS |
 | Test | Windows with `powershell.exe` on PATH - the gateway's tests launch real PowerShell processes end to end, against fake worker scripts, so QlikView itself is not required |
 | Start the server | Windows, with `powershell.exe` on PATH. QlikView Desktop is **not** required to be open for the server itself to start - it starts and waits for an MCP client to connect regardless |
-| Call the `evaluate` tool | QlikView Desktop must be installed, licensed, and running, with the target document open or reachable, at the moment the tool is called - not before |
 
 There is currently no CI configuration.
 
@@ -49,9 +62,6 @@ or, after packaging:
 mvn package
 java -jar target/qlikview-mcp-server.jar
 ```
-
-For the `evaluate` tool call to succeed, QlikView Desktop must already be running, with the
-document you want to work against open or reachable, before an MCP client calls it.
 
 ## Configuration
 
