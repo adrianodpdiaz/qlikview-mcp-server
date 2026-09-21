@@ -1,0 +1,77 @@
+package com.qlikview.mcp.gateway;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.qlikview.mcp.config.QlikViewProperties;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+/**
+ * Proves the gateway's most important property first: a call to the worker process is always
+ * bounded by {@code qlikview.call.timeout}, even when the worker process itself never returns,
+ * the way some real QlikView COM calls do on certain failure paths.
+ */
+class PowerShellQlikViewGatewayTest {
+
+    private static final String QVW_FAKE_FILE = "document.qvw";
+    private static final String HANGING_WORKER = "worker/hanging-worker.ps1";
+    private static final String ECHO_WORKER = "worker/echo-worker.ps1";
+    private static final String ERROR_WORKER = "worker/error-worker.ps1";
+
+    @Test
+    @Timeout(5)
+    void timesOutAndKillsWorkerWhenItHangs() {
+        PowerShellQlikViewGateway gateway = gatewayFor(HANGING_WORKER, Duration.ofMillis(500));
+
+        assertThatThrownBy(() -> gateway.getScript(Path.of(QVW_FAKE_FILE)))
+            .isInstanceOf(GatewayException.class)
+            .hasMessageContaining("timed out");
+    }
+
+    @Test
+    void returnsResultOnSuccessfulResponse() {
+        PowerShellQlikViewGateway gateway = gatewayFor(ECHO_WORKER, Duration.ofSeconds(10));
+
+        String script = gateway.getScript(Path.of(QVW_FAKE_FILE));
+        assertThat(script).isEqualTo("fake script for getScript");
+    }
+
+    @Test
+    void wrapsWorkerErrorResponseInGatewayException() {
+        PowerShellQlikViewGateway gateway = gatewayFor(ERROR_WORKER, Duration.ofSeconds(10));
+
+        assertThatThrownBy(() -> gateway.getScript(Path.of(QVW_FAKE_FILE)))
+            .isInstanceOf(GatewayException.class)
+            .hasMessageContaining("simulated worker error");
+    }
+
+    private PowerShellQlikViewGateway gatewayFor(String classpathScript, Duration timeout) {
+        Path script = resolveTestResource(classpathScript);
+        QlikViewProperties properties = new QlikViewProperties(
+            List.of(),
+            new QlikViewProperties.Worker(script.toString()),
+            new QlikViewProperties.Call(timeout),
+            new QlikViewProperties.Output(200_000));
+        return new PowerShellQlikViewGateway(script, properties, new ObjectMapper());
+    }
+
+    private Path resolveTestResource(String classpathLocation) {
+        URL url = getClass().getClassLoader().getResource(classpathLocation);
+        if (url == null) {
+            throw new IllegalStateException("Test resource not found on classpath: " + classpathLocation);
+        }
+        try {
+            return Path.of(url.toURI());
+        } catch (URISyntaxException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+}
