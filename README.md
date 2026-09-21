@@ -10,7 +10,7 @@ A read-only [MCP](https://modelcontextprotocol.io) server that gives any MCP-cap
 | `list_documents` | Lists `.qvw`/`.qvf` files under the allowlisted roots | File system only |
 | `get_script` | Returns a document's load script | The document's `-prj` export folder (see below) |
 | `get_variables` | Returns variables as declared in the load script (`SET`/`LET` statements), with an optional name filter. With `live=true`, returns current in-memory values from a running QlikView Desktop instead | The document's `-prj` export folder (see below); QlikView Desktop running for `live=true` |
-| `get_data_model` | Returns table names (from the script) and field tags - associative keys, QlikView's own system fields - from the `-prj` export | The document's `-prj` export folder (see below) |
+| `get_data_model` | Returns table names and fields - associative keys, QlikView's own system fields - from the `-prj` export. With `live=true`, returns the real, complete data model from a running QlikView Desktop instead, including cardinality and table membership the `-prj` export does not record | The document's `-prj` export folder (see below); QlikView Desktop running for `live=true` |
 | `get_sheets` | Returns a document's sheets and the ids of the objects placed on each | The document's `-prj` export folder (see below) |
 | `get_object` | Returns one sheet object's type, and for chart-type objects, its dimensions (field names) and expressions | The document's `-prj` export folder (see below) |
 | `get_data_sources` | Returns connection statements, `FROM`-clause file references, includes, and the `BINARY` statement's source document, derived from the load script | The document's `-prj` export folder (see below) |
@@ -21,9 +21,9 @@ in-memory state: a `LET` value that depends on a function or another variable is
 literal, unevaluated script text, and any variable changed at runtime after the last reload will
 not be reflected.
 
-`get_data_model` is a partial data model: it does not report which table a given field belongs to,
-row counts, or distinct-value counts, since none of these are recorded anywhere in the `-prj`
-export - only QlikView's own live, in-memory data model has them.
+`get_data_model`'s static (default) source is a partial data model: it does not report which
+table a given field belongs to, row counts, or distinct-value counts, since none of these are
+recorded anywhere in the `-prj` export - use `live=true` for the complete picture.
 
 `get_data_sources` is a best-effort text parse of the load script, not an evaluation of it: a
 source path built from a variable (e.g. `$(vPath)\file.qvd`) is returned as the literal,
