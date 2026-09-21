@@ -12,7 +12,7 @@ import java.nio.file.Path;
 public interface QlikViewGateway {
 
     /**
-     * Full load script for the document, exactly as QlikView returns it (unredacted — callers
+     * Full load script for the document, exactly as QlikView returns it (unredacted - callers
      * are responsible for redaction before this leaves the process).
      */
     String getScript(Path document);
