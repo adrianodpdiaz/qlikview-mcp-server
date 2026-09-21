@@ -25,6 +25,7 @@ class PowerShellQlikViewGatewayTest {
     private static final String HANGING_WORKER = "worker/hanging-worker.ps1";
     private static final String ECHO_WORKER = "worker/echo-worker.ps1";
     private static final String ERROR_WORKER = "worker/error-worker.ps1";
+    private static final String SHEETS_ECHO_WORKER = "worker/sheets-echo-worker.ps1";
 
     @Test
     @Timeout(5)
@@ -42,6 +43,19 @@ class PowerShellQlikViewGatewayTest {
 
         String script = gateway.getScript(Path.of(QVW_FAKE_FILE));
         assertThat(script).isEqualTo("fake script for getScript");
+    }
+
+    @Test
+    void getSheetsParsesSheetsAndObjectsFromWorkerResponse() {
+        PowerShellQlikViewGateway gateway = gatewayFor(SHEETS_ECHO_WORKER, Duration.ofSeconds(10));
+
+        QlikViewGateway.SheetInfo[] sheets = gateway.getSheets(Path.of(QVW_FAKE_FILE));
+
+        assertThat(sheets).hasSize(1);
+        assertThat(sheets[0].caption()).isEqualTo("Main");
+        assertThat(sheets[0].objects()).extracting(QlikViewGateway.SheetObjectInfo::objectId)
+                .containsExactly("Document\\CS01", "Document\\CH03");
+        assertThat(sheets[0].objects()[1].objectType()).isEqualTo("11");
     }
 
     @Test

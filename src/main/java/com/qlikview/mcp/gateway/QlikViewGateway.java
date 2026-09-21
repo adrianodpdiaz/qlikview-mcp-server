@@ -28,6 +28,11 @@ public interface QlikViewGateway {
     DataModel getDataModel(Path document);
 
     /**
+     * The document's sheets and the objects placed on each.
+     */
+    SheetInfo[] getSheets(Path document);
+
+    /**
      * Evaluates a QlikView expression against the document's current selection state.
      */
     String evaluate(Path document, String expression);
@@ -53,5 +58,17 @@ public interface QlikViewGateway {
      * system field, whether its values are numeric, and which table(s) it belongs to.
      */
     record FieldInfo(String name, long cardinal, boolean isSystem, boolean isNumeric, String[] srcTables) { }
+
+    /**
+     * One sheet: its caption (title) and the objects placed on it.
+     */
+    record SheetInfo(String caption, SheetObjectInfo[] objects) { }
+
+    /**
+     * One object on a sheet: its id and type, as reported by QlikView's own object model (for
+     * example {@code "12"} for a chart, distinct object-type identifiers for a current-selections
+     * box or a search object).
+     */
+    record SheetObjectInfo(String objectId, String objectType) { }
 
 }

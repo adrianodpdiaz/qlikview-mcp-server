@@ -11,7 +11,7 @@ A read-only [MCP](https://modelcontextprotocol.io) server that gives any MCP-cap
 | `get_script` | Returns a document's load script | The document's `-prj` export folder (see below) |
 | `get_variables` | Returns variables as declared in the load script (`SET`/`LET` statements), with an optional name filter. With `live=true`, returns current in-memory values from a running QlikView Desktop instead | The document's `-prj` export folder (see below); QlikView Desktop running for `live=true` |
 | `get_data_model` | Returns table names and fields - associative keys, QlikView's own system fields - from the `-prj` export. With `live=true`, returns the real, complete data model from a running QlikView Desktop instead, including cardinality and table membership the `-prj` export does not record | The document's `-prj` export folder (see below); QlikView Desktop running for `live=true` |
-| `get_sheets` | Returns a document's sheets and the ids of the objects placed on each | The document's `-prj` export folder (see below) |
+| `get_sheets` | Returns a document's sheets and the ids of the objects placed on each. With `live=true`, reads from a running QlikView Desktop instead - see the note below on how the two sources differ | The document's `-prj` export folder (see below); QlikView Desktop running for `live=true` |
 | `get_object` | Returns one sheet object's type, and for chart-type objects, its dimensions (field names) and expressions | The document's `-prj` export folder (see below) |
 | `get_data_sources` | Returns connection statements, `FROM`-clause file references, includes, and the `BINARY` statement's source document, derived from the load script | The document's `-prj` export folder (see below) |
 | `evaluate` | Evaluates a QlikView expression against the document's currently loaded data and selections | QlikView Desktop installed, licensed, and running, with the document open or reachable |
@@ -24,6 +24,12 @@ not be reflected.
 `get_data_model`'s static (default) source is a partial data model: it does not report which
 table a given field belongs to, row counts, or distinct-value counts, since none of these are
 recorded anywhere in the `-prj` export - use `live=true` for the complete picture.
+
+`get_sheets`'s two sources identify a sheet and its objects differently and are not directly
+comparable: the static source gives the sheet's internal id (e.g. `Document\SH01`) and each
+object's type as an XML element name (e.g. `GraphProperties`); `live=true` gives the sheet's
+displayed title (e.g. `"Main"`) and each object's type as QlikView's own numeric object-type code
+(e.g. `"11"`). Object ids from either source work as input to `get_object`.
 
 `get_data_sources` is a best-effort text parse of the load script, not an evaluation of it: a
 source path built from a variable (e.g. `$(vPath)\file.qvd`) is returned as the literal,

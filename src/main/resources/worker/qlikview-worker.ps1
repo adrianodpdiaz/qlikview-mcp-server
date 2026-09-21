@@ -2,7 +2,7 @@
 QlikView MCP gateway worker (one-shot process per call).
 
 Reads a single JSON request from stdin:
-  { "operation": "getScript" | "getVariables" | "getDataModel" | "evaluate",
+  { "operation": "getScript" | "getVariables" | "getDataModel" | "getSheets" | "evaluate",
     "documentPath": "C:\...\document.qvw",
     "expression": "..." }   (evaluate only)
 
@@ -90,6 +90,23 @@ try {
             }
 
             Write-JsonResponse @{ ok = $true; result = @{ tables = $tables; fields = $fields } }
+        }
+
+        'getSheets' {
+            $sheets = @($doc.GetSheetsAll())
+            $sheetResults = @()
+            foreach ($sheet in $sheets) {
+                $caption = $sheet.GetProperties().Name
+                $objects = @()
+                foreach ($obj in @($sheet.GetSheetObjects())) {
+                    $objects += @{
+                        objectId   = $obj.GetObjectId()
+                        objectType = "$($obj.GetObjectType())"
+                    }
+                }
+                $sheetResults += @{ caption = $caption; objects = $objects }
+            }
+            Write-JsonResponse @{ ok = $true; result = @{ sheets = $sheetResults } }
         }
 
         'evaluate' {
