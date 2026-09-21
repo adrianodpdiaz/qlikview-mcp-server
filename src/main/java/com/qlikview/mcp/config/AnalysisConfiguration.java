@@ -1,7 +1,9 @@
 package com.qlikview.mcp.config;
 
 import com.qlikview.mcp.analysis.DocumentScanner;
+import com.qlikview.mcp.analysis.FieldTagReader;
 import com.qlikview.mcp.analysis.ScriptReader;
+import com.qlikview.mcp.analysis.TableNameParser;
 import com.qlikview.mcp.analysis.VariableParser;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,5 +28,15 @@ public class AnalysisConfiguration {
     @Bean
     public VariableParser variableParser() {
         return new VariableParser();
+    }
+
+    @Bean
+    public TableNameParser tableNameParser() {
+        return new TableNameParser();
+    }
+
+    @Bean
+    public FieldTagReader fieldTagReader() {
+        return new FieldTagReader();
     }
 }

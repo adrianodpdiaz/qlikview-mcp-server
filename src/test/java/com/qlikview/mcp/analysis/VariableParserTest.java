@@ -1,6 +1,5 @@
 package com.qlikview.mcp.analysis;
 
-import org.intellij.lang.annotations.Language;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

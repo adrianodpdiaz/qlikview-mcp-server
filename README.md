@@ -10,6 +10,7 @@ A read-only [MCP](https://modelcontextprotocol.io) server that gives any MCP-cap
 | `list_documents` | Lists `.qvw`/`.qvf` files under the allowlisted roots | File system only |
 | `get_script` | Returns a document's load script | The document's `-prj` export folder (see below) |
 | `get_variables` | Returns variables as declared in the load script (`SET`/`LET` statements), with an optional name filter | The document's `-prj` export folder (see below) |
+| `get_data_model` | Returns table names (from the script) and field tags - associative keys, QlikView's own system fields - from the `-prj` export | The document's `-prj` export folder (see below) |
 | `evaluate` | Evaluates a QlikView expression against the document's currently loaded data and selections | QlikView Desktop installed, licensed, and running, with the document open or reachable |
 
 `get_variables` reflects the script's declared values, not necessarily a document's current
@@ -17,12 +18,17 @@ in-memory state: a `LET` value that depends on a function or another variable is
 literal, unevaluated script text, and any variable changed at runtime after the last reload will
 not be reflected.
 
+`get_data_model` is a partial data model: it does not report which table a given field belongs to,
+row counts, or distinct-value counts, since none of these are recorded anywhere in the `-prj`
+export - only QlikView's own live, in-memory data model has them.
+
 ### The `-prj` export folder
 
-`get_script` and `get_variables` read from a `<document>-prj` folder QlikView writes next to the
-document on save - but only if that folder already exists at save time; QlikView does not create
-it itself. To enable it for a document: create an empty folder named `<documentName>-prj` next to
-the `.qvw`/`.qvf` file, then open and save the document once in QlikView Desktop.
+`get_script`, `get_variables`, and `get_data_model` read from a `<document>-prj` folder QlikView
+writes next to the document on save - but only if that folder already exists at save time; QlikView
+does not create it itself. To enable it for a document: create an empty folder named
+`<documentName>-prj` next to the `.qvw`/`.qvf` file, then open and save the document once in
+QlikView Desktop.
 
 ## Windows only
 
