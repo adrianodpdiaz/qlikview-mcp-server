@@ -13,6 +13,7 @@ A read-only [MCP](https://modelcontextprotocol.io) server that gives any MCP-cap
 | `get_data_model` | Returns table names (from the script) and field tags - associative keys, QlikView's own system fields - from the `-prj` export | The document's `-prj` export folder (see below) |
 | `get_sheets` | Returns a document's sheets and the ids of the objects placed on each | The document's `-prj` export folder (see below) |
 | `get_object` | Returns one sheet object's type, and for chart-type objects, its dimensions (field names) and expressions | The document's `-prj` export folder (see below) |
+| `get_data_sources` | Returns connection statements, `FROM`-clause file references, includes, and the `BINARY` statement's source document, derived from the load script | The document's `-prj` export folder (see below) |
 | `evaluate` | Evaluates a QlikView expression against the document's currently loaded data and selections | QlikView Desktop installed, licensed, and running, with the document open or reachable |
 
 `get_variables` reflects the script's declared values, not necessarily a document's current
@@ -24,13 +25,18 @@ not be reflected.
 row counts, or distinct-value counts, since none of these are recorded anywhere in the `-prj`
 export - only QlikView's own live, in-memory data model has them.
 
+`get_data_sources` is a best-effort text parse of the load script, not an evaluation of it: a
+source path built from a variable (e.g. `$(vPath)\file.qvd`) is returned as the literal,
+unevaluated text, and connection strings are returned exactly as written, credentials included -
+treat them as sensitive, the same as `get_script`'s output.
+
 ### The `-prj` export folder
 
-`get_script`, `get_variables`, `get_data_model`, `get_sheets`, and `get_object` all read from a
-`<document>-prj` folder QlikView writes next to the document on save - but only if that folder
-already exists at save time; QlikView does not create it itself. To enable it for a document:
-create an empty folder named `<documentName>-prj` next to the `.qvw`/`.qvf` file, then open and
-save the document once in QlikView Desktop.
+`get_script`, `get_variables`, `get_data_model`, `get_sheets`, `get_object`, and
+`get_data_sources` all read from a `<document>-prj` folder QlikView writes next to the document on
+save - but only if that folder already exists at save time; QlikView does not create it itself. To
+enable it for a document: create an empty folder named `<documentName>-prj` next to the
+`.qvw`/`.qvf` file, then open and save the document once in QlikView Desktop.
 
 ## Windows only
 
