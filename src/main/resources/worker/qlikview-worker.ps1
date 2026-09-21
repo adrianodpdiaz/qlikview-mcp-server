@@ -17,6 +17,11 @@ channel and would otherwise fail to parse the response.
 
 $ErrorActionPreference = 'Stop'
 
+# Windows PowerShell's default console output encoding is the system codepage, not UTF-8, which
+# corrupts any non-ASCII character (accented letters, currency symbols) written to stdout. The
+# Java gateway reads this process's stdout as UTF-8, so the encodings must match.
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+
 function Write-JsonResponse($obj) {
     $json = $obj | ConvertTo-Json -Depth 10 -Compress
     [Console]::Out.Write($json)

@@ -9,7 +9,7 @@ A read-only [MCP](https://modelcontextprotocol.io) server that gives any MCP-cap
 |---|---|---|
 | `list_documents` | Lists `.qvw`/`.qvf` files under the allowlisted roots | File system only |
 | `get_script` | Returns a document's load script | The document's `-prj` export folder (see below) |
-| `get_variables` | Returns variables as declared in the load script (`SET`/`LET` statements), with an optional name filter | The document's `-prj` export folder (see below) |
+| `get_variables` | Returns variables as declared in the load script (`SET`/`LET` statements), with an optional name filter. With `live=true`, returns current in-memory values from a running QlikView Desktop instead | The document's `-prj` export folder (see below); QlikView Desktop running for `live=true` |
 | `get_data_model` | Returns table names (from the script) and field tags - associative keys, QlikView's own system fields - from the `-prj` export | The document's `-prj` export folder (see below) |
 | `get_sheets` | Returns a document's sheets and the ids of the objects placed on each | The document's `-prj` export folder (see below) |
 | `get_object` | Returns one sheet object's type, and for chart-type objects, its dimensions (field names) and expressions | The document's `-prj` export folder (see below) |
