@@ -36,40 +36,6 @@ instead of needing someone to export, parse, or manually explain what's inside.
   script text exactly as written - treat that output as sensitive.
 - **QlikView Desktop only** - no Qlik Sense support (different product, different API).
 
-## Usage
-
-1. **(Optional) Enable the `-prj` export for any document you want to query without `live=true`.** Create an
-   empty folder named `<documentName>-prj` next to the `.qvw`/`.qvf` file, then open and save the
-   document once in QlikView Desktop. `evaluate` and any call with `live=true` skip this entirely
-   and go straight to a running QlikView Desktop instead - the folder is only needed for the
-   default (static) mode of the other four tools.
-2. **Set `qlikview.roots`** to the folder(s) containing your documents (see
-   [Configuration](#configuration)) - every tool call is rejected until this is set.
-3. **Register the server with your MCP client** (see [Building and running](#building-and-running))
-   and call a tool with an absolute document path, for example:
-
-   ```json
-   { "name": "get_script", "arguments": { "document": "C:\\Data\\Sales.qvw" } }
-   ```
-
-4. **Add `"live": true`** on `get_variables`, `get_data_model`, `get_sheets`, or `get_object` to
-   read from a running QlikView Desktop instead of the `-prj` export - requires QlikView open with
-   the document reachable at that moment:
-
-   ```json
-   { "name": "get_data_model", "arguments": { "document": "C:\\Data\\Sales.qvw", "live": true } }
-   ```
-
-5. **Use `evaluate` for anything that needs the document's actual current state** - it has no
-   static mode, only live:
-
-   ```json
-   { "name": "evaluate", "arguments": { "document": "C:\\Data\\Sales.qvw", "expression": "=Sum(SalesAmount)" } }
-   ```
-
-The full tool list, and exactly what each one's static vs. live source returns, is in the next
-section.
-
 ## Two ways each tool answers a question
 
 Every tool has a **static** source (reads the document's load script and its `-prj` export folder
@@ -111,27 +77,33 @@ A few sources are worth calling out explicitly:
 Every static-source tool needs this folder to exist (see [Usage](#usage), step 1). QlikView never
 creates it on its own - only fills it in on save if it's already there.
 
-## Windows-only, single-machine
+## Windows-only, single-machine — but only the live path
 
-The live path is COM automation (`QlikTech.QlikView`), driven from a PowerShell worker process -
-a Windows-only mechanism that only ever talks to a QlikView Desktop instance running in the same
-interactive Windows session as the server process. It cannot reach a different machine or a
-different user's session, so **one server instance serves one person on one machine** - it is not
-something you can host centrally for a team. Anyone who wants the live tools runs their own local
-instance, next to their own licensed QlikView Desktop install.
+**Only calling a live tool is actually Windows-only.** The live path is COM automation
+(`QlikTech.QlikView`), driven from a PowerShell worker process — a Windows-only mechanism that
+only ever talks to a QlikView Desktop instance running in the same interactive Windows session as
+the server process. It cannot reach a different machine or a different user's session, so **one
+server instance serves one person on one machine** — it is not something you can host centrally
+for a team. Anyone who wants the live tools runs their own local instance, next to their own
+licensed QlikView Desktop install.
 
-The static path has no QlikView dependency and could in principle be shared (a network drive of
-`-prj` folders, read by multiple people's own local server instances) - but the server binary
-itself is still built and tested as Windows-only today, since it's one artifact serving both paths.
+Compiling the server, and starting it, need nothing Windows-specific — the `powershell` process is
+only ever launched from inside a live tool call, not at startup. Calling a *static*-mode tool
+(the default for every tool except `evaluate`) needs nothing but the files on disk, on any OS.
 
 What each stage actually needs:
 
 | Stage | Needs |
 |---|---|
-| Compile | Java 21 and Maven only - works on any OS |
-| Test | Windows with `powershell.exe` on PATH - the gateway's tests launch real PowerShell processes end to end, against fake worker scripts, so QlikView itself is not required |
-| Start the server | Windows, with `powershell.exe` on PATH. QlikView Desktop does **not** need to be open for the server itself to start - it starts and waits for an MCP client to connect regardless |
-| Call a live tool (`evaluate`, or any tool with `live=true`) | QlikView Desktop installed, licensed, and running, with the document open or reachable, at the moment the tool is called |
+| Compile | Java 21 and Maven only — works on any OS |
+| Start the server | Java 21 only — works on any OS. `powershell.exe` is never invoked at startup, and QlikView Desktop does not need to be open; the server starts and waits for an MCP client to connect regardless |
+| Call a static-mode tool (the default for every tool except `evaluate`) | Nothing but the `-prj` export files on disk — works on any OS |
+| Run the full test suite (`mvn test`) | On any OS: most of it runs regardless. The gateway's tests launch real PowerShell processes end to end (against fake worker scripts, so QlikView itself is not required) and are skipped, not failed, on non-Windows |
+| Call a live tool (`evaluate`, or any tool with `live=true`) | Windows, with `powershell.exe` on PATH, and QlikView Desktop installed, licensed, and running, with the document open or reachable, at the moment the tool is called |
+
+The packaged jar itself isn't split by platform today — it's one artifact containing both paths —
+so in practice you still need Windows to build and test it end to end, even though the static
+tools' own logic has no OS dependency.
 
 ## Requirements
 
@@ -140,6 +112,38 @@ What each stage actually needs:
 - Maven
 - QlikView Desktop, installed and licensed - only needed for live tool calls, not to compile,
   test, or start the server
+
+## Usage
+
+1. **(Optional) Enable the `-prj` export for any document you want to query without `live=true`.** Create an
+   empty folder named `<documentName>-prj` next to the `.qvw`/`.qvf` file, then open and save the
+   document once in QlikView Desktop. `evaluate` and any call with `live=true` skip this entirely
+   and go straight to a running QlikView Desktop instead - the folder is only needed for the
+   default (static) mode of the other four tools.
+2. **Set `qlikview.roots`** to the folder(s) containing your documents (see
+   [Configuration](#configuration)) - every tool call is rejected until this is set.
+3. **Register the server with your MCP client** (see [Building and running](#building-and-running))
+   and call a tool with an absolute document path, for example:
+
+   ```json
+   { "name": "get_script", "arguments": { "document": "C:\\Data\\Sales.qvw" } }
+   ```
+
+4. **Add `"live": true`** on `get_variables`, `get_data_model`, `get_sheets`, or `get_object` to
+   read from a running QlikView Desktop instead of the `-prj` export - requires QlikView open with
+   the document reachable at that moment:
+
+   ```json
+   { "name": "get_data_model", "arguments": { "document": "C:\\Data\\Sales.qvw", "live": true } }
+   ```
+
+5. **Use `evaluate` for anything that needs the document's actual current state** - it has no
+   static mode, only live:
+
+   ```json
+   { "name": "evaluate", "arguments": { "document": "C:\\Data\\Sales.qvw", "expression": "=Sum(SalesAmount)" } }
+   ```
+
 
 ## Building and running
 

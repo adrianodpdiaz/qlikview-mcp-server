@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qlikview.mcp.config.QlikViewProperties;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -18,7 +20,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Proves the gateway's most important property first: a call to the worker process is always
  * bounded by {@code qlikview.call.timeout}, even when the worker process itself never returns,
  * the way some real QlikView COM calls do on certain failure paths.
+ * <p>
+ * Every test here launches a real {@code powershell.exe} process (against fake worker scripts, no
+ * QlikView needed), so the whole class is skipped on non-Windows runners rather than failing.
  */
+@EnabledOnOs(OS.WINDOWS)
 class PowerShellQlikViewGatewayTest {
 
     private static final String QVW_FAKE_FILE = "document.qvw";
