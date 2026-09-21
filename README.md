@@ -11,6 +11,8 @@ A read-only [MCP](https://modelcontextprotocol.io) server that gives any MCP-cap
 | `get_script` | Returns a document's load script | The document's `-prj` export folder (see below) |
 | `get_variables` | Returns variables as declared in the load script (`SET`/`LET` statements), with an optional name filter | The document's `-prj` export folder (see below) |
 | `get_data_model` | Returns table names (from the script) and field tags - associative keys, QlikView's own system fields - from the `-prj` export | The document's `-prj` export folder (see below) |
+| `get_sheets` | Returns a document's sheets and the ids of the objects placed on each | The document's `-prj` export folder (see below) |
+| `get_object` | Returns one sheet object's type, and for chart-type objects, its dimensions (field names) and expressions | The document's `-prj` export folder (see below) |
 | `evaluate` | Evaluates a QlikView expression against the document's currently loaded data and selections | QlikView Desktop installed, licensed, and running, with the document open or reachable |
 
 `get_variables` reflects the script's declared values, not necessarily a document's current
@@ -24,11 +26,11 @@ export - only QlikView's own live, in-memory data model has them.
 
 ### The `-prj` export folder
 
-`get_script`, `get_variables`, and `get_data_model` read from a `<document>-prj` folder QlikView
-writes next to the document on save - but only if that folder already exists at save time; QlikView
-does not create it itself. To enable it for a document: create an empty folder named
-`<documentName>-prj` next to the `.qvw`/`.qvf` file, then open and save the document once in
-QlikView Desktop.
+`get_script`, `get_variables`, `get_data_model`, `get_sheets`, and `get_object` all read from a
+`<document>-prj` folder QlikView writes next to the document on save - but only if that folder
+already exists at save time; QlikView does not create it itself. To enable it for a document:
+create an empty folder named `<documentName>-prj` next to the `.qvw`/`.qvf` file, then open and
+save the document once in QlikView Desktop.
 
 ## Windows only
 

@@ -1,7 +1,9 @@
 package com.qlikview.mcp.config;
 
+import com.qlikview.mcp.analysis.ChartReader;
 import com.qlikview.mcp.analysis.DocumentScanner;
 import com.qlikview.mcp.analysis.FieldTagReader;
+import com.qlikview.mcp.analysis.ProjectIndexReader;
 import com.qlikview.mcp.analysis.ScriptReader;
 import com.qlikview.mcp.analysis.TableNameParser;
 import com.qlikview.mcp.analysis.VariableParser;
@@ -38,5 +40,15 @@ public class AnalysisConfiguration {
     @Bean
     public FieldTagReader fieldTagReader() {
         return new FieldTagReader();
+    }
+
+    @Bean
+    public ProjectIndexReader projectIndexReader() {
+        return new ProjectIndexReader();
+    }
+
+    @Bean
+    public ChartReader chartReader() {
+        return new ChartReader();
     }
 }
