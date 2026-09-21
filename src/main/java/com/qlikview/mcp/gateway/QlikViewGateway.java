@@ -33,6 +33,11 @@ public interface QlikViewGateway {
     SheetInfo[] getSheets(Path document);
 
     /**
+     * One sheet object's type, and for chart-type objects, its dimensions and expressions.
+     */
+    ObjectDetail getObject(Path document, String objectId);
+
+    /**
      * Evaluates a QlikView expression against the document's current selection state.
      */
     String evaluate(Path document, String expression);
@@ -70,5 +75,11 @@ public interface QlikViewGateway {
      * box or a search object).
      */
     record SheetObjectInfo(String objectId, String objectType) { }
+
+    /**
+     * One sheet object's full detail: its id, its type, and - for chart-type objects only - its
+     * dimensions (resolved to real field names) and expressions.
+     */
+    record ObjectDetail(String objectId, String objectType, String[] dimensions, String[] expressions) { }
 
 }

@@ -2,9 +2,10 @@
 QlikView MCP gateway worker (one-shot process per call).
 
 Reads a single JSON request from stdin:
-  { "operation": "getScript" | "getVariables" | "getDataModel" | "getSheets" | "evaluate",
+  { "operation": "getScript" | "getVariables" | "getDataModel" | "getSheets" | "getObject" | "evaluate",
     "documentPath": "C:\...\document.qvw",
-    "expression": "..." }   (evaluate only)
+    "objectId": "Document\CH03",     (getObject only)
+    "expression": "..." }            (evaluate only)
 
 Writes a single JSON response to stdout:
   { "ok": true, "result": <operation-specific> }
@@ -107,6 +108,55 @@ try {
                 $sheetResults += @{ caption = $caption; objects = $objects }
             }
             Write-JsonResponse @{ ok = $true; result = @{ sheets = $sheetResults } }
+        }
+
+        'getObject' {
+            $targetId = $request.objectId
+            $found = $null
+            foreach ($sheet in @($doc.GetSheetsAll())) {
+                foreach ($obj in @($sheet.GetSheetObjects())) {
+                    if ($obj.GetObjectId() -eq $targetId) {
+                        $found = $obj
+                        break
+                    }
+                }
+                if ($found) { break }
+            }
+
+            if ($null -eq $found) {
+                throw "Object not found on any sheet: $targetId"
+            }
+
+            $objectType = "$($found.GetObjectType())"
+            $dimensions = @()
+            $expressions = @()
+
+            # Only chart-type objects (GraphProperties) expose Dimensions/Expressions - other
+            # object types (current-selections box, search object, ...) do not have these
+            # properties at all, so accessing them throws rather than returning null.
+            try {
+                $props = $found.GetProperties()
+                $dims = $props.Dimensions
+                for ($i = 0; $i -lt $dims.Count; $i++) {
+                    $dimensions += $dims.Item($i).PseudoDef.Name
+                }
+                $exprs = $props.Expressions
+                for ($i = 0; $i -lt $exprs.Count; $i++) {
+                    $expressions += $exprs.Item($i).Item(0).Data.ExpressionData.Definition.v
+                }
+            } catch {
+                # Not a chart-type object; dimensions/expressions stay empty.
+            }
+
+            Write-JsonResponse @{
+                ok     = $true
+                result = @{
+                    objectId    = $targetId
+                    objectType  = $objectType
+                    dimensions  = $dimensions
+                    expressions = $expressions
+                }
+            }
         }
 
         'evaluate' {

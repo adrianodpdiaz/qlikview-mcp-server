@@ -26,6 +26,7 @@ class PowerShellQlikViewGatewayTest {
     private static final String ECHO_WORKER = "worker/echo-worker.ps1";
     private static final String ERROR_WORKER = "worker/error-worker.ps1";
     private static final String SHEETS_ECHO_WORKER = "worker/sheets-echo-worker.ps1";
+    private static final String OBJECT_ECHO_WORKER = "worker/object-echo-worker.ps1";
 
     @Test
     @Timeout(5)
@@ -56,6 +57,18 @@ class PowerShellQlikViewGatewayTest {
         assertThat(sheets[0].objects()).extracting(QlikViewGateway.SheetObjectInfo::objectId)
                 .containsExactly("Document\\CS01", "Document\\CH03");
         assertThat(sheets[0].objects()[1].objectType()).isEqualTo("11");
+    }
+
+    @Test
+    void getObjectParsesTypeDimensionsAndExpressionsFromWorkerResponse() {
+        PowerShellQlikViewGateway gateway = gatewayFor(OBJECT_ECHO_WORKER, Duration.ofSeconds(10));
+
+        QlikViewGateway.ObjectDetail detail = gateway.getObject(Path.of(QVW_FAKE_FILE), "Document\\CH03");
+
+        assertThat(detail.objectId()).isEqualTo("Document\\CH03");
+        assertThat(detail.objectType()).isEqualTo("11");
+        assertThat(detail.dimensions()).containsExactly("CustomerName");
+        assertThat(detail.expressions()).containsExactly("Sum(SalesAmount)");
     }
 
     @Test

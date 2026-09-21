@@ -96,6 +96,26 @@ public class PowerShellQlikViewGateway implements QlikViewGateway {
     }
 
     @Override
+    public ObjectDetail getObject(Path document, String objectId) {
+        JsonNode result = call("getObject", Map.of("documentPath", document.toString(), "objectId", objectId));
+
+        List<String> dimensions = new ArrayList<>();
+        for (JsonNode d : result.get("dimensions")) {
+            dimensions.add(d.asText());
+        }
+        List<String> expressions = new ArrayList<>();
+        for (JsonNode e : result.get("expressions")) {
+            expressions.add(e.asText());
+        }
+
+        return new ObjectDetail(
+            result.get("objectId").asText(),
+            result.get("objectType").asText(),
+            dimensions.toArray(new String[0]),
+            expressions.toArray(new String[0]));
+    }
+
+    @Override
     public String evaluate(Path document, String expression) {
         JsonNode result = call("evaluate", Map.of(
             "documentPath", document.toString(),
