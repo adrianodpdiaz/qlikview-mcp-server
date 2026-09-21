@@ -70,6 +70,36 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>resolve-mockito-agent</id>
+                        <phase>generate-test-resources</phase>
+                        <goals>
+                            <goal>properties</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <!--
+                        Mockito's inline mock maker self-attaches a Java agent at runtime, which
+                        JDK 21+ deprecates with a warning and future JDKs will disallow outright.
+                        Declaring the agent at JVM startup instead avoids both the warning and the
+                        future failure. org.mockito:mockito-core:jar is resolved to its actual
+                        local repository path by the maven-dependency-plugin execution above.
+                        -Xshare:off avoids a separate, unrelated JVM warning about Class Data
+                        Sharing being disabled as a side effect of loading a Java agent at
+                        startup - this only affects JVM startup time, never correctness.
+                    -->
+                    <argLine>-javaagent:${org.mockito:mockito-core:jar} -Xshare:off</argLine>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>
