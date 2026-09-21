@@ -52,3 +52,11 @@ java -jar target/qlikview-mcp-server.jar
 
 For the `evaluate` tool call to succeed, QlikView Desktop must already be running, with the
 document you want to work against open or reachable, before an MCP client calls it.
+
+## Configuration
+
+| Property | Purpose |
+|---|---|
+| `qlikview.roots` | Comma-separated list of folders a document path must resolve under. Required - if empty, every tool call is rejected |
+| `qlikview.output.max-chars` | Caps how much text a tool response returns before truncating |
+| `qlikview.call.timeout` | Maximum time a single QlikView call may run before it is force-killed |

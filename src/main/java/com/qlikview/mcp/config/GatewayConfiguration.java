@@ -16,8 +16,18 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
+/**
+ * Spring Boot's Jackson autoconfiguration is tied to the web starters, so with
+ * {@code spring.main.web-application-type=none} no {@link ObjectMapper} bean is provided
+ * automatically - this configuration defines one explicitly for the gateway to use.
+ */
 @Configuration
 public class GatewayConfiguration {
+
+    @Bean
+    public ObjectMapper objectMapper() {
+        return new ObjectMapper();
+    }
 
     @Bean
     public QlikViewGateway qlikViewGateway(QlikViewProperties properties, ObjectMapper objectMapper,
