@@ -92,7 +92,7 @@ class PowerShellQlikViewGatewayTest {
             List.of(),
             new QlikViewProperties.Worker(script.toString()),
             new QlikViewProperties.Call(timeout),
-            new QlikViewProperties.Output(200_000));
+            new QlikViewProperties.Output(200_000, 1000));
         return new PowerShellQlikViewGateway(script, properties, new ObjectMapper());
     }
 

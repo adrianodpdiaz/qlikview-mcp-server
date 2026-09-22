@@ -5,6 +5,7 @@ import com.qlikview.mcp.analysis.ScriptReader;
 import com.qlikview.mcp.config.QlikViewProperties;
 import com.qlikview.mcp.guard.DocumentPathGuard;
 import com.qlikview.mcp.guard.GuardException;
+import com.qlikview.mcp.guard.OutputLimiter;
 import com.qlikview.mcp.guard.SecretRedactor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,7 +33,7 @@ class GetDataSourcesToolTest {
 
     @BeforeEach
     void setUp() {
-        tool = new GetDataSourcesTool(guard(), scriptReader, dataSourceParser, secretRedactor);
+        tool = new GetDataSourcesTool(guard(), scriptReader, dataSourceParser, secretRedactor, outputLimiter());
     }
 
     @Test
@@ -68,6 +69,25 @@ class GetDataSourcesToolTest {
     }
 
     @Test
+    void truncatesEachListIndependentlyWhenExceedingConfiguredLimit() throws IOException {
+        tool = new GetDataSourcesTool(guard(), scriptReader, dataSourceParser, secretRedactor, outputLimiter(1));
+        Path document = writeDocumentWithScript(
+            """
+                ODBC CONNECT TO [First];
+                CONNECT TO [Second];
+                LOAD * FROM 'a.qvd' (qvd);
+                LOAD * FROM 'b.qvd' (qvd);
+                $(Include='one.qvs');
+                $(Include='two.qvs');""");
+
+        GetDataSourcesTool.DataSourcesSummary result = tool.getDataSources(document.toString());
+
+        assertThat(result.connections()).hasSize(1);
+        assertThat(result.fileSources()).hasSize(1);
+        assertThat(result.includes()).hasSize(1);
+    }
+
+    @Test
     void throwsWhenNoPrjExportExists() {
         Path document = tempDir.resolve("nodoc.qvw");
 
@@ -84,11 +104,22 @@ class GetDataSourcesToolTest {
     }
 
     private DocumentPathGuard guard() {
-        QlikViewProperties properties = new QlikViewProperties(
+        return new DocumentPathGuard(properties(1000));
+    }
+
+    private OutputLimiter outputLimiter() {
+        return outputLimiter(1000);
+    }
+
+    private OutputLimiter outputLimiter(int maxItems) {
+        return new OutputLimiter(properties(maxItems));
+    }
+
+    private QlikViewProperties properties(int maxItems) {
+        return new QlikViewProperties(
             List.of(tempDir.toString()),
             new QlikViewProperties.Worker("unused"),
             new QlikViewProperties.Call(Duration.ofSeconds(1)),
-            new QlikViewProperties.Output(1000));
-        return new DocumentPathGuard(properties);
+            new QlikViewProperties.Output(1000, maxItems));
     }
 }

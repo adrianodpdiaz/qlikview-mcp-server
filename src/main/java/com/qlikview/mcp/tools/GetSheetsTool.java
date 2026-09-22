@@ -4,6 +4,7 @@ import com.qlikview.mcp.analysis.ProjectIndexReader;
 import com.qlikview.mcp.gateway.QlikViewGateway;
 import com.qlikview.mcp.guard.DocumentPathGuard;
 import com.qlikview.mcp.guard.GuardException;
+import com.qlikview.mcp.guard.OutputLimiter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
@@ -24,6 +25,10 @@ import java.util.List;
  * source gives the sheet's caption (its displayed title, e.g. {@code "Main"}) and, per object, its
  * id and its type as QlikView's own numeric object-type code (e.g. {@code "11"}). Object ids from
  * either source are valid input to {@code get_object}.
+ * <p>
+ * The returned sheet list is capped at {@code qlikview.output.max-items}; a document with more
+ * sheets than that returns only the first {@code max-items} of them. Objects nested under each
+ * returned sheet are not capped.
  */
 @Component
 @RequiredArgsConstructor
@@ -32,6 +37,7 @@ public class GetSheetsTool {
     private final DocumentPathGuard pathGuard;
     private final ProjectIndexReader projectIndexReader;
     private final QlikViewGateway gateway;
+    private final OutputLimiter outputLimiter;
 
     /**
      * One sheet and the objects placed on it. {@code sheetId} is populated (non-empty) by the
@@ -55,7 +61,8 @@ public class GetSheetsTool {
             @McpToolParam(description = "Read sheets from a running QlikView Desktop instance instead of the "
                 + "-prj export (default false)", required = false) Boolean live) {
         Path resolved = pathGuard.resolve(document);
-        return Boolean.TRUE.equals(live) ? getLiveSheets(resolved) : getStaticSheets(resolved);
+        List<SheetSummary> sheets = Boolean.TRUE.equals(live) ? getLiveSheets(resolved) : getStaticSheets(resolved);
+        return outputLimiter.limitList(sheets).items();
     }
 
     private List<SheetSummary> getStaticSheets(Path resolved) {

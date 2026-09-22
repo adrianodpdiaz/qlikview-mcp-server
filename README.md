@@ -92,7 +92,7 @@ only ever talks to a QlikView Desktop instance running in the same interactive W
 the server process. It cannot reach a different machine or a different user's session, so **one
 server instance serves one person on one machine** — it is not something you can host centrally
 for a team. Anyone who wants the live tools runs their own local instance, next to their own
-licensed QlikView Desktop install.
+licensed QlikView Desktop installation.
 
 Compiling the server, and starting it, need nothing Windows-specific — the `powershell` process is
 only ever launched from inside a live tool call, not at startup. Calling a *static*-mode tool
@@ -188,7 +188,8 @@ check your client's documentation for where that goes.
 | Property | Default | Purpose |
 |---|---|---|
 | `qlikview.roots` | *(empty)* | Comma-separated list of folders a document path must resolve under. Required - if empty, every tool call is rejected. Set via the `QLIKVIEW_MCP_ROOTS` environment variable, or override `qlikview.roots` directly (see below) |
-| `qlikview.output.max-chars` | `200000` | Caps how much text a response returns before truncating - currently only applied by `evaluate` and `get_script` |
+| `qlikview.output.max-chars` | `200000` | Caps how much text a single free-text response returns before truncating - applied by `evaluate` and `get_script` |
+| `qlikview.output.max-items` | `500` | Caps how many entries each list a tool returns may contain before truncating - applied to every list-returning tool |
 | `qlikview.call.timeout` | `15s` | Maximum time a single live (COM) call may run before the worker process is force-killed |
 
 `qlikview.roots` has a dedicated environment variable (`QLIKVIEW_MCP_ROOTS`, used above) because
@@ -202,8 +203,6 @@ binding (`QLIKVIEW_CALL_TIMEOUT=30s`), or your own `application.properties` over
 
 Beyond what's covered in [What this doesn't do](#what-this-doesnt-do):
 
-- Output-size limiting (`qlikview.output.max-chars`) is only applied by `evaluate` and
-  `get_script`; the other tools return unbounded responses.
 - Behaviour against Section Access-protected documents has not been verified - a live tool call
   against one may return silently-reduced data, block, or hit the call timeout.
 

@@ -4,6 +4,7 @@ import com.qlikview.mcp.analysis.DataSourceParser;
 import com.qlikview.mcp.analysis.ScriptReader;
 import com.qlikview.mcp.guard.DocumentPathGuard;
 import com.qlikview.mcp.guard.GuardException;
+import com.qlikview.mcp.guard.OutputLimiter;
 import com.qlikview.mcp.guard.SecretRedactor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.mcp.annotation.McpTool;
@@ -20,6 +21,10 @@ import java.util.List;
  * {@code $(Must_Include=...)} references, and the {@code BINARY} statement's source document, if
  * present. This is a best-effort text parse, not an evaluation of the script - a source path
  * built from a variable is returned as the literal, unevaluated text.
+ * <p>
+ * {@code connections}, {@code fileSources}, and {@code includes} are each capped at {@code
+ * qlikview.output.max-items} independently; a script with more of any one of them than that
+ * returns only the first {@code max-items} of that list.
  */
 @Component
 @RequiredArgsConstructor
@@ -29,6 +34,7 @@ public class GetDataSourcesTool {
     private final ScriptReader scriptReader;
     private final DataSourceParser dataSourceParser;
     private final SecretRedactor secretRedactor;
+    private final OutputLimiter outputLimiter;
 
     /**
      * One connection statement's declared type and connection string, with any credential-shaped
@@ -72,12 +78,18 @@ public class GetDataSourcesTool {
                 + "QlikView Desktop, then try again."));
 
         DataSourceParser.DataSources sources = dataSourceParser.parse(script);
+        List<ConnectionSummary> connections = sources.connections().stream()
+            .map(c -> new ConnectionSummary(c.type(), secretRedactor.redactConnectionCredentials(c.connectionString())))
+            .toList();
+        List<FileSourceSummary> fileSources = sources.fileSources().stream()
+            .map(f -> new FileSourceSummary(f.path(), orEmpty(f.format()))).toList();
+        List<IncludeSummary> includes = sources.includes().stream()
+            .map(i -> new IncludeSummary(i.path(), i.mustInclude())).toList();
+
         return new DataSourcesSummary(
-            sources.connections().stream()
-                .map(c -> new ConnectionSummary(c.type(), secretRedactor.redactConnectionCredentials(c.connectionString())))
-                .toList(),
-            sources.fileSources().stream().map(f -> new FileSourceSummary(f.path(), orEmpty(f.format()))).toList(),
-            sources.includes().stream().map(i -> new IncludeSummary(i.path(), i.mustInclude())).toList(),
+            outputLimiter.limitList(connections).items(),
+            outputLimiter.limitList(fileSources).items(),
+            outputLimiter.limitList(includes).items(),
             orEmpty(sources.binarySource()));
     }
 

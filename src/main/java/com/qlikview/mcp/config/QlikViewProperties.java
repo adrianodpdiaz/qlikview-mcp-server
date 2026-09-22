@@ -29,8 +29,9 @@ public record QlikViewProperties(
     public record Call(Duration timeout) { }
 
     /**
-     * Cap on how much text a tool response may return before it is truncated.
+     * Caps on how much a tool response may return before it is truncated: {@code maxChars} for
+     * free text, {@code maxItems} for each list a tool returns.
      */
-    public record Output(int maxChars) { }
+    public record Output(int maxChars, int maxItems) { }
 
 }

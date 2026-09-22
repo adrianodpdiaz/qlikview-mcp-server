@@ -7,6 +7,7 @@ import com.qlikview.mcp.config.QlikViewProperties;
 import com.qlikview.mcp.gateway.QlikViewGateway;
 import com.qlikview.mcp.guard.DocumentPathGuard;
 import com.qlikview.mcp.guard.GuardException;
+import com.qlikview.mcp.guard.OutputLimiter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -36,7 +37,7 @@ class GetDataModelToolTest {
 
     @BeforeEach
     void setUp() {
-        tool = new GetDataModelTool(guard(), scriptReader, tableNameParser, fieldTagReader, gateway);
+        tool = new GetDataModelTool(guard(), scriptReader, tableNameParser, fieldTagReader, gateway, outputLimiter());
     }
 
     @Test
@@ -102,6 +103,23 @@ class GetDataModelToolTest {
             .hasMessageContaining("No -prj export found");
     }
 
+    @Test
+    void truncatesTablesAndFieldsIndependentlyWhenExceedingConfiguredLimit() throws IOException {
+        tool = new GetDataModelTool(guard(), scriptReader, tableNameParser, fieldTagReader, gateway, outputLimiter(1));
+        Path document = writeDocumentWithScriptAndTags("Fact:\nLOAD RecNo() as FactID AUTOGENERATE 10;", null);
+        when(gateway.getDataModel(document)).thenReturn(new QlikViewGateway.DataModel(
+            new QlikViewGateway.TableInfo[]{new QlikViewGateway.TableInfo("Fact"), new QlikViewGateway.TableInfo("Customer")},
+            new QlikViewGateway.FieldInfo[]{
+                new QlikViewGateway.FieldInfo("FactID", 10, false, true, new String[]{"Fact"}),
+                new QlikViewGateway.FieldInfo("CustomerID", 5, false, true, new String[]{"Fact", "Customer"})
+            }));
+
+        GetDataModelTool.DataModelSummary result = tool.getDataModel(document.toString(), true);
+
+        assertThat(result.tables()).hasSize(1);
+        assertThat(result.fields()).hasSize(1);
+    }
+
     private Path writeDocumentWithScriptAndTags(String script, String docInternalsXml) throws IOException {
         Path document = tempDir.resolve("report.qvw");
         Path prjFolder = Files.createDirectory(tempDir.resolve("report-prj"));
@@ -113,11 +131,22 @@ class GetDataModelToolTest {
     }
 
     private DocumentPathGuard guard() {
-        QlikViewProperties properties = new QlikViewProperties(
+        return new DocumentPathGuard(properties(1000));
+    }
+
+    private OutputLimiter outputLimiter() {
+        return outputLimiter(1000);
+    }
+
+    private OutputLimiter outputLimiter(int maxItems) {
+        return new OutputLimiter(properties(maxItems));
+    }
+
+    private QlikViewProperties properties(int maxItems) {
+        return new QlikViewProperties(
             List.of(tempDir.toString()),
             new QlikViewProperties.Worker("unused"),
             new QlikViewProperties.Call(Duration.ofSeconds(1)),
-            new QlikViewProperties.Output(1000));
-        return new DocumentPathGuard(properties);
+            new QlikViewProperties.Output(1000, maxItems));
     }
 }

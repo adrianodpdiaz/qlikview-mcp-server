@@ -5,6 +5,7 @@ import com.qlikview.mcp.config.QlikViewProperties;
 import com.qlikview.mcp.gateway.QlikViewGateway;
 import com.qlikview.mcp.guard.DocumentPathGuard;
 import com.qlikview.mcp.guard.GuardException;
+import com.qlikview.mcp.guard.OutputLimiter;
 import org.intellij.lang.annotations.Language;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,7 +50,7 @@ class GetSheetsToolTest {
 
     @BeforeEach
     void setUp() {
-        tool = new GetSheetsTool(guard(), projectIndexReader, gateway);
+        tool = new GetSheetsTool(guard(), projectIndexReader, gateway, outputLimiter());
     }
 
     @Test
@@ -91,6 +92,19 @@ class GetSheetsToolTest {
             .hasMessageContaining("No -prj export found");
     }
 
+    @Test
+    void truncatesWhenSheetCountExceedsConfiguredLimit() throws IOException {
+        tool = new GetSheetsTool(guard(), projectIndexReader, gateway, outputLimiter(1));
+        Path document = writeDocumentWithProjectXml();
+        when(gateway.getSheets(document)).thenReturn(new QlikViewGateway.SheetInfo[]{
+            new QlikViewGateway.SheetInfo("Main", new QlikViewGateway.SheetObjectInfo[0]),
+            new QlikViewGateway.SheetInfo("Second", new QlikViewGateway.SheetObjectInfo[0])
+        });
+
+        List<GetSheetsTool.SheetSummary> result = tool.getSheets(document.toString(), true);
+        assertThat(result).hasSize(1);
+    }
+
     private Path writeDocumentWithProjectXml() throws IOException {
         Path document = tempDir.resolve("report.qvw");
         Path prjFolder = Files.createDirectory(tempDir.resolve("report-prj"));
@@ -99,11 +113,22 @@ class GetSheetsToolTest {
     }
 
     private DocumentPathGuard guard() {
-        QlikViewProperties properties = new QlikViewProperties(
+        return new DocumentPathGuard(properties(1000));
+    }
+
+    private OutputLimiter outputLimiter() {
+        return outputLimiter(1000);
+    }
+
+    private OutputLimiter outputLimiter(int maxItems) {
+        return new OutputLimiter(properties(maxItems));
+    }
+
+    private QlikViewProperties properties(int maxItems) {
+        return new QlikViewProperties(
             List.of(tempDir.toString()),
             new QlikViewProperties.Worker("unused"),
             new QlikViewProperties.Call(Duration.ofSeconds(1)),
-            new QlikViewProperties.Output(1000));
-        return new DocumentPathGuard(properties);
+            new QlikViewProperties.Output(1000, maxItems));
     }
 }

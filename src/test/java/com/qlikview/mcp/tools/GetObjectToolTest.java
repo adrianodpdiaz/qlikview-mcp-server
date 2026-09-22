@@ -118,7 +118,7 @@ class GetObjectToolTest {
             List.of(tempDir.toString()),
             new QlikViewProperties.Worker("unused"),
             new QlikViewProperties.Call(Duration.ofSeconds(1)),
-            new QlikViewProperties.Output(1000));
+            new QlikViewProperties.Output(1000, 1000));
         return new DocumentPathGuard(properties);
     }
 }

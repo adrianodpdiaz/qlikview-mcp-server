@@ -85,6 +85,6 @@ class GetScriptToolTest {
             List.of(tempDir.toString()),
             new QlikViewProperties.Worker("unused"),
             new QlikViewProperties.Call(Duration.ofSeconds(1)),
-            new QlikViewProperties.Output(maxChars));
+            new QlikViewProperties.Output(maxChars, 1000));
     }
 }

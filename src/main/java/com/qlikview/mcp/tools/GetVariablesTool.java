@@ -5,6 +5,7 @@ import com.qlikview.mcp.analysis.VariableParser;
 import com.qlikview.mcp.gateway.QlikViewGateway;
 import com.qlikview.mcp.guard.DocumentPathGuard;
 import com.qlikview.mcp.guard.GuardException;
+import com.qlikview.mcp.guard.OutputLimiter;
 import com.qlikview.mcp.guard.SecretRedactor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.mcp.annotation.McpTool;
@@ -30,6 +31,10 @@ import java.util.List;
  * flagged via {@code possibleSecret} rather than having its value withheld - QlikView exposes no
  * marker distinguishing an actual secret from a variable that merely mentions one in its name
  * (e.g. a label), so the caller makes the final call on how to treat it.
+ * <p>
+ * The returned list is capped at {@code qlikview.output.max-items}, applied after {@code
+ * nameFilter}; a document with more matching variables than that returns only the first
+ * {@code max-items} of them.
  */
 @Component
 @RequiredArgsConstructor
@@ -40,6 +45,7 @@ public class GetVariablesTool {
     private final VariableParser variableParser;
     private final QlikViewGateway gateway;
     private final SecretRedactor secretRedactor;
+    private final OutputLimiter outputLimiter;
 
     /**
      * One variable. {@code isLet} is only meaningful for the static (script) source; {@code
@@ -64,7 +70,8 @@ public class GetVariablesTool {
         List<VariableSummary> variables = Boolean.TRUE.equals(live) ?
             getLiveVariables(resolved) : getStaticVariables(resolved);
 
-        return variables.stream().filter(v -> matchesFilter(v.name(), nameFilter)).toList();
+        List<VariableSummary> filtered = variables.stream().filter(v -> matchesFilter(v.name(), nameFilter)).toList();
+        return outputLimiter.limitList(filtered).items();
     }
 
     private List<VariableSummary> getStaticVariables(Path resolved) {

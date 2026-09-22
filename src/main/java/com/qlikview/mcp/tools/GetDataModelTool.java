@@ -6,6 +6,7 @@ import com.qlikview.mcp.analysis.TableNameParser;
 import com.qlikview.mcp.gateway.QlikViewGateway;
 import com.qlikview.mcp.guard.DocumentPathGuard;
 import com.qlikview.mcp.guard.GuardException;
+import com.qlikview.mcp.guard.OutputLimiter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
@@ -29,6 +30,10 @@ import java.util.List;
  * which {@code isKey} is derived - a field belonging to more than one table is a key) - but
  * requires QlikView Desktop installed, licensed, and running, with the document open or
  * reachable, at the moment the tool is called.
+ * <p>
+ * {@code tables} and {@code fields} are each capped at {@code qlikview.output.max-items}
+ * independently; a document with more of either than that returns only the first {@code
+ * max-items} of that list.
  */
 @Component
 @RequiredArgsConstructor
@@ -39,6 +44,7 @@ public class GetDataModelTool {
     private final TableNameParser tableNameParser;
     private final FieldTagReader fieldTagReader;
     private final QlikViewGateway gateway;
+    private final OutputLimiter outputLimiter;
 
     /**
      * A document's data model: table names, and fields. See the class-level documentation for
@@ -71,7 +77,10 @@ public class GetDataModelTool {
             @McpToolParam(description = "Read the actual data model from a running QlikView Desktop instance "
                 + "instead of the -prj export (default false)", required = false) Boolean live) {
         Path resolved = pathGuard.resolve(document);
-        return Boolean.TRUE.equals(live) ? getLiveDataModel(resolved) : getStaticDataModel(resolved);
+        DataModelSummary model = Boolean.TRUE.equals(live) ? getLiveDataModel(resolved) : getStaticDataModel(resolved);
+        return new DataModelSummary(
+            outputLimiter.limitList(model.tables()).items(),
+            outputLimiter.limitList(model.fields()).items());
     }
 
     private DataModelSummary getStaticDataModel(Path resolved) {
