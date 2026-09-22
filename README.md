@@ -35,8 +35,11 @@ instead of needing someone to export, parse, or manually explain what's inside.
 - **The live tools only reach one machine.** COM automation only talks to a QlikView Desktop
   instance in the same interactive Windows session as the server process - there's no way to run
   one shared instance for a team; each person runs their own, next to their own QlikView license.
-- **No secret redaction yet.** `get_script` and `get_data_sources` return connection strings and
-  script text exactly as written - treat that output as sensitive.
+- **Secret redaction is pattern-based, not guaranteed.** `get_script` and `get_data_sources` mask
+  credential-shaped `key=value` pairs (`PWD=`, `UID=`, `Password=`, ...) in connection strings
+  before returning them, and `get_variables` flags variables whose name suggests a secret rather
+  than withholding the value. A credential embedded in the script some other way won't be caught -
+  treat the output as likely safe, not guaranteed safe.
 - **QlikView Desktop only** - no Qlik Sense support (different product, different API).
 
 ## Two ways each tool answers a question
@@ -72,8 +75,9 @@ A few sources are worth calling out explicitly:
 - **`get_variables` (static)** reflects the script's *declared* values, not necessarily what's
   currently in memory: a `LET` value that depends on a function or another variable comes back as
   the literal, unevaluated script text.
-- **`get_data_sources` and `get_script` return credentials verbatim** if the script has them in
-  connection strings. There is no redaction yet - treat their output as sensitive.
+- **`get_data_sources` and `get_script` mask credential-shaped key=value pairs** (`PWD=`, `UID=`,
+  `Password=`, ...) in connection strings before returning them. This is pattern matching, not
+  parsing - a credential embedded some other way in the script won't be caught.
 
 ### The `-prj` export folder
 

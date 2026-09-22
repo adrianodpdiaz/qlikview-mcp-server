@@ -4,6 +4,7 @@ import com.qlikview.mcp.analysis.DataSourceParser;
 import com.qlikview.mcp.analysis.ScriptReader;
 import com.qlikview.mcp.guard.DocumentPathGuard;
 import com.qlikview.mcp.guard.GuardException;
+import com.qlikview.mcp.guard.SecretRedactor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
@@ -14,11 +15,11 @@ import java.util.List;
 
 /**
  * Returns a document's data sources, derived by parsing its load script: connection statements
- * (with credentials included exactly as written - callers must treat this as sensitive, the same
- * as for {@code get_script}), files referenced in {@code FROM} clauses with their format
- * specifications, {@code $(Include=...)}/{@code $(Must_Include=...)} references, and the
- * {@code BINARY} statement's source document, if present. This is a best-effort text parse, not
- * an evaluation of the script - a source path built from a variable is returned as the literal, unevaluated text.
+ * (with credentials redacted - see {@code connectionString} below), files referenced in
+ * {@code FROM} clauses with their format specifications, {@code $(Include=...)}/
+ * {@code $(Must_Include=...)} references, and the {@code BINARY} statement's source document, if
+ * present. This is a best-effort text parse, not an evaluation of the script - a source path
+ * built from a variable is returned as the literal, unevaluated text.
  */
 @Component
 @RequiredArgsConstructor
@@ -27,9 +28,11 @@ public class GetDataSourcesTool {
     private final DocumentPathGuard pathGuard;
     private final ScriptReader scriptReader;
     private final DataSourceParser dataSourceParser;
+    private final SecretRedactor secretRedactor;
 
     /**
-     * One connection statement's declared type and connection string, exactly as written.
+     * One connection statement's declared type and connection string, with any credential-shaped
+     * {@code key=value} pair (password, uid, user id, ...) replaced by a masked placeholder.
      */
     public record ConnectionSummary(String type, String connectionString) { }
 
@@ -70,7 +73,9 @@ public class GetDataSourcesTool {
 
         DataSourceParser.DataSources sources = dataSourceParser.parse(script);
         return new DataSourcesSummary(
-            sources.connections().stream().map(c -> new ConnectionSummary(c.type(), c.connectionString())).toList(),
+            sources.connections().stream()
+                .map(c -> new ConnectionSummary(c.type(), secretRedactor.redactConnectionCredentials(c.connectionString())))
+                .toList(),
             sources.fileSources().stream().map(f -> new FileSourceSummary(f.path(), orEmpty(f.format()))).toList(),
             sources.includes().stream().map(i -> new IncludeSummary(i.path(), i.mustInclude())).toList(),
             orEmpty(sources.binarySource()));
