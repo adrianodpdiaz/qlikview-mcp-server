@@ -5,6 +5,7 @@ import com.qlikview.mcp.analysis.VariableParser;
 import com.qlikview.mcp.gateway.QlikViewGateway;
 import com.qlikview.mcp.guard.DocumentPathGuard;
 import com.qlikview.mcp.guard.GuardException;
+import com.qlikview.mcp.guard.SecretRedactor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
@@ -24,6 +25,11 @@ import java.util.List;
  * runtime by an input box, action, or macro after the last reload will not be reflected. The live
  * source reflects the document's actual current values, but requires QlikView Desktop installed,
  * licensed, and running, with the document open or reachable, at the moment the tool is called.
+ * <p>
+ * A variable whose name suggests it holds a secret (password, token, API key, and similar) is
+ * flagged via {@code possibleSecret} rather than having its value withheld - QlikView exposes no
+ * marker distinguishing an actual secret from a variable that merely mentions one in its name
+ * (e.g. a label), so the caller makes the final call on how to treat it.
  */
 @Component
 @RequiredArgsConstructor
@@ -33,18 +39,20 @@ public class GetVariablesTool {
     private final ScriptReader scriptReader;
     private final VariableParser variableParser;
     private final QlikViewGateway gateway;
+    private final SecretRedactor secretRedactor;
 
     /**
      * One variable. {@code isLet} is only meaningful for the static (script) source; {@code
-     * isSystem} is only meaningful for the live source.
+     * isSystem} is only meaningful for the live source. {@code possibleSecret} is true when the
+     * variable's name suggests it holds a credential.
      */
-    public record VariableSummary(String name, String value, boolean isLet, boolean isSystem) { }
+    public record VariableSummary(String name, String value, boolean isLet, boolean isSystem, boolean possibleSecret) { }
 
     @McpTool(
             name = "get_variables",
             description = "Get a QlikView document's variables: by default, as declared in its load script "
                 + "(SET/LET statements); with live=true, as currently held in memory by a running QlikView "
-                + "Desktop instance",
+                + "Desktop instance. Variables whose name suggests a credential are flagged, not withheld.",
             generateOutputSchema = true,
             annotations = @McpTool.McpAnnotations(readOnlyHint = true, destructiveHint = false, idempotentHint = false))
     public List<VariableSummary> getVariables(
@@ -66,14 +74,14 @@ public class GetVariablesTool {
                 + "QlikView Desktop, then try again."));
 
         return variableParser.parse(script).stream()
-            .map(v -> new VariableSummary(v.name(), v.value(), v.isLet(), false))
+            .map(v -> new VariableSummary(v.name(), v.value(), v.isLet(), false, secretRedactor.looksLikeSecretName(v.name())))
             .toList();
     }
 
     private List<VariableSummary> getLiveVariables(Path resolved) {
         QlikViewGateway.VariableDescription[] descriptions = gateway.getVariables(resolved);
         return Arrays.stream(descriptions)
-            .map(v -> new VariableSummary(v.name(), v.rawValue(), false, v.isSystem()))
+            .map(v -> new VariableSummary(v.name(), v.rawValue(), false, v.isSystem(), secretRedactor.looksLikeSecretName(v.name())))
             .toList();
     }
 

@@ -6,6 +6,7 @@ import com.qlikview.mcp.config.QlikViewProperties;
 import com.qlikview.mcp.gateway.QlikViewGateway;
 import com.qlikview.mcp.guard.DocumentPathGuard;
 import com.qlikview.mcp.guard.GuardException;
+import com.qlikview.mcp.guard.SecretRedactor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -30,11 +31,12 @@ class GetVariablesToolTest {
     private final ScriptReader scriptReader = new ScriptReader();
     private final VariableParser variableParser = new VariableParser();
     private final QlikViewGateway gateway = mock(QlikViewGateway.class);
+    private final SecretRedactor secretRedactor = new SecretRedactor();
     private GetVariablesTool tool;
 
     @BeforeEach
     void setUp() {
-        tool = new GetVariablesTool(guard(), scriptReader, variableParser, gateway);
+        tool = new GetVariablesTool(guard(), scriptReader, variableParser, gateway, secretRedactor);
     }
 
     @Test
@@ -44,8 +46,8 @@ class GetVariablesToolTest {
         List<GetVariablesTool.VariableSummary> result = tool.getVariables(document.toString(), null, null);
 
         assertThat(result).containsExactlyInAnyOrder(
-            new GetVariablesTool.VariableSummary("vLimit", "10", false, false),
-            new GetVariablesTool.VariableSummary("vToday", "Today()", true, false));
+            new GetVariablesTool.VariableSummary("vLimit", "10", false, false, false),
+            new GetVariablesTool.VariableSummary("vToday", "Today()", true, false, false));
     }
 
     @Test
@@ -59,8 +61,8 @@ class GetVariablesToolTest {
         List<GetVariablesTool.VariableSummary> result = tool.getVariables(document.toString(), null, true);
 
         assertThat(result).containsExactlyInAnyOrder(
-                new GetVariablesTool.VariableSummary("vLimit", "42", false, false),
-                new GetVariablesTool.VariableSummary("ThousandSep", ",", false, true));
+            new GetVariablesTool.VariableSummary("vLimit", "42", false, false, false),
+            new GetVariablesTool.VariableSummary("ThousandSep", ",", false, true, false));
     }
 
     @Test
@@ -68,7 +70,23 @@ class GetVariablesToolTest {
         Path document = writeDocumentWithScript("SET vLimit = 10;");
 
         List<GetVariablesTool.VariableSummary> result = tool.getVariables(document.toString(), null, false);
-        assertThat(result).containsExactly(new GetVariablesTool.VariableSummary("vLimit", "10", false, false));
+        assertThat(result).containsExactly(new GetVariablesTool.VariableSummary("vLimit", "10", false, false, false));
+    }
+
+    @Test
+    void flagsVariableWithSecretLikeName() throws IOException {
+        Path document = writeDocumentWithScript("SET vPassword = 'hunter2';");
+
+        List<GetVariablesTool.VariableSummary> result = tool.getVariables(document.toString(), null, null);
+        assertThat(result).containsExactly(new GetVariablesTool.VariableSummary("vPassword", "'hunter2'", false, false, true));
+    }
+
+    @Test
+    void doesNotFlagOrdinaryVariableName() throws IOException {
+        Path document = writeDocumentWithScript("SET vLimit = 10;");
+
+        List<GetVariablesTool.VariableSummary> result = tool.getVariables(document.toString(), null, null);
+        assertThat(result).extracting(GetVariablesTool.VariableSummary::possibleSecret).containsExactly(false);
     }
 
     @Test
