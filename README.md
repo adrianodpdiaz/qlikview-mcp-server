@@ -5,8 +5,8 @@
 
 A read-only [MCP](https://modelcontextprotocol.io) server that lets AI assistants (Claude Code,
 Claude Desktop, GitHub Copilot, Cursor, or any other MCP client) inspect a running QlikView Desktop
-instance - its variables, data model, sheets, and charts - and evaluate expressions against its
-actual current data and selections.
+instance - its load script, variables, data model, sheets, charts, and data sources - and evaluate
+expressions against its actual current data and selections.
 
 ## Why
 
@@ -29,15 +29,13 @@ document open or reachable, at the moment a tool is called.
 | Tool | Returns |
 |---|---|
 | `list_documents` | File-system scan for `.qvw`/`.qvf` under the allowlisted roots - the only tool that doesn't need QlikView running |
+| `get_script` | The load script, including tab markers. Connection-string credentials are redacted |
 | `get_variables` | Current in-memory variable values, including runtime changes |
 | `get_data_model` | Real table names, cardinality, and table membership per field |
 | `get_sheets` | Sheets and the objects placed on each |
 | `get_object` | One object's type and, for charts, its dimensions/expressions |
+| `get_data_sources` | Connection statements, `FROM`-clause file references, includes, and the `BINARY` statement's source document, parsed from the load script. Connection-string credentials are redacted |
 | `evaluate` | Evaluates an expression against current data/selections - the only way to get this |
-
-Two tools from an earlier version of this server, `get_script` and `get_data_sources`, were dropped
-along with the static `-prj`-export-based reading path they depended on. They'll come back as
-live/COM-only tools in a future change.
 
 ## Limitations
 
@@ -48,9 +46,10 @@ live/COM-only tools in a future change.
   each person runs their own server next to their own QlikView license.
 - **Windows-only.** COM automation is driven from a PowerShell worker process. Compiling and
   starting the server don't require Windows, but no tool call can succeed without it.
-- **Secret redaction is pattern-based, not guaranteed.** `get_variables` flags (doesn't withhold)
-  variables whose name suggests a secret. A credential embedded some other way won't be caught -
-  treat output as likely safe, not guaranteed safe.
+- **Secret redaction is pattern-based, not guaranteed.** `get_script` and `get_data_sources` mask
+  credential-shaped `key=value` pairs (`PWD=`, `UID=`, `Password=`, ...); `get_variables` flags
+  (doesn't withhold) variables whose name suggests a secret. A credential embedded some other way
+  won't be caught - treat output as likely safe, not guaranteed safe.
 - **QlikView Desktop only** - no Qlik Sense support (different product, different API).
 - **Section Access is unverified.** Whether a Section-Access-protected document returns
   silently-reduced data, blocks, or hits the call timeout hasn't been tested.
@@ -120,7 +119,7 @@ environment variable added to that client's own MCP server configuration.
 | Property | Default | Purpose |
 |---|---|---|
 | `qlikview.roots` | *(empty)* | Comma-separated list of folders a document path must resolve under. Required - if empty, every tool call is rejected. Set via `QLIKVIEW_MCP_ROOTS` |
-| `qlikview.output.max-chars` | `200000` | Caps free-text response size (`evaluate`) before truncating |
+| `qlikview.output.max-chars` | `200000` | Caps free-text response size (`evaluate`, `get_script`) before truncating |
 | `qlikview.output.max-items` | `500` | Caps how many entries any list a tool returns may contain before truncating |
 | `qlikview.call.timeout` | `15s` | Maximum time a single live (COM) call may run before the worker process is force-killed |
 
