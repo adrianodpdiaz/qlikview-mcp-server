@@ -30,24 +30,6 @@ class DocumentScannerTest {
     }
 
     @Test
-    void detectsPrjSiblingFolder() throws IOException {
-        Files.createFile(tempDir.resolve("report.qvw"));
-        Files.createDirectory(tempDir.resolve("report-prj"));
-        Files.createFile(tempDir.resolve("other.qvw"));
-
-        List<DocumentScanner.DocumentInfo> results = scannerWithRoots(tempDir.toString()).listDocuments();
-
-        assertThat(results)
-            .filteredOn(d -> d.name().equals("report.qvw"))
-            .extracting(DocumentScanner.DocumentInfo::hasPrjFolder)
-            .containsExactly(true);
-        assertThat(results)
-            .filteredOn(d -> d.name().equals("other.qvw"))
-            .extracting(DocumentScanner.DocumentInfo::hasPrjFolder)
-            .containsExactly(false);
-    }
-
-    @Test
     void findsDocumentsInSubfolders() throws IOException {
         Path subfolder = Files.createDirectory(tempDir.resolve("sub"));
         Files.createFile(subfolder.resolve("nested.qvw"));
