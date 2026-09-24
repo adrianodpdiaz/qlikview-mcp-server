@@ -108,12 +108,11 @@ never creates it on its own, only fills it in on save once it exists.
 
 ### Option 1: download a release (no clone, no Maven, Java optional)
 
-Download `qlikview-mcp-server.jar` and `run-server.bat` from the
-[latest release](../../releases/latest) into the same folder, then run `run-server.bat` instead of
-`java -jar ...`. It finds a Java 21+ runtime on its own - a previously downloaded copy in `.\jre`,
-then `JAVA_HOME`, then `java` on `PATH` - and downloads a private JRE into `.\jre` if none
-qualifies (via `curl.exe`/`tar.exe`, both built into Windows since 10 1803). Nothing is installed
-system-wide; deleting the folder removes everything.
+Download and extract the zip from the [latest release](../../releases/latest), then run
+`run-server.bat` instead of `java -jar ...`. It finds a Java 21+ runtime on its own - a previously
+downloaded copy in `.\jre`, then `JAVA_HOME`, then `java` on `PATH` - and downloads a private JRE
+into `.\jre` if none qualifies (via `curl.exe`/`tar.exe`, both built into Windows since 10 1803).
+Nothing is installed system-wide; deleting the folder removes everything.
 
 ```
 set QLIKVIEW_MCP_ROOTS=C:\path\to\your\qlikview\documents
