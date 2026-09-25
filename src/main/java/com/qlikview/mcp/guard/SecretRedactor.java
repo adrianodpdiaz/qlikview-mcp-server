@@ -7,8 +7,7 @@ import java.util.regex.Pattern;
  * Scrubs credentials out of text before it leaves the process. QlikView connection strings
  * commonly embed a password directly as a {@code key=value;} pair (ODBC/OLEDB style, e.g.
  * {@code PWD=hunter2;} or {@code Password=hunter2;}), and QlikView returns this text completely
- * unredacted from every COM call and every {@code -prj} export file that contains it - nothing
- * upstream of this class does any scrubbing.
+ * unredacted from every COM call that contains it - nothing upstream of this class does any scrubbing.
  */
 public class SecretRedactor {
 

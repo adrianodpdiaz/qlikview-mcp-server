@@ -8,9 +8,9 @@ import java.util.regex.Pattern;
 /**
  * Extracts data-source references from QlikView load script text: connection statements, file
  * sources in {@code LOAD}/{@code SELECT} statements, and include references. This is a
- * best-effort, line and pattern based parser, the same approach as {@link VariableParser} and
- * {@link TableNameParser} - it does not evaluate the script, so a source path built from a
- * variable (e.g. {@code $(vPath)\file.qvd}) is returned as the literal, unevaluated text.
+ * best-effort, line and pattern based parser - it does not evaluate the script, so a source path
+ * built from a variable (e.g. {@code $(vPath)\file.qvd}) is returned as the literal, unevaluated
+ * text.
  */
 public class DataSourceParser {
 

@@ -29,10 +29,9 @@ public class DocumentScanner {
     private final QlikViewProperties properties;
 
     /**
-     * One document found on disk: its name, absolute path, size, last-modified time, and
-     * whether a `-prj` export folder sits alongside it.
+     * One document found on disk: its name, absolute path, size, and last-modified time.
      */
-    public record DocumentInfo(String name, Path path, long sizeBytes, Instant modifiedAt, boolean hasPrjFolder) { }
+    public record DocumentInfo(String name, Path path, long sizeBytes, Instant modifiedAt) { }
 
     public List<DocumentInfo> listDocuments() {
         List<DocumentInfo> results = new ArrayList<>();
@@ -78,13 +77,11 @@ public class DocumentScanner {
 
     private Optional<DocumentInfo> toDocumentInfo(Path path, BasicFileAttributes attrs) {
         try {
-            boolean hasPrj = Files.isDirectory(PrjFolder.forDocument(path));
             return Optional.of(new DocumentInfo(
                 path.getFileName().toString(),
                 path.toAbsolutePath().normalize(),
                 attrs.size(),
-                attrs.lastModifiedTime().toInstant(),
-                hasPrj));
+                attrs.lastModifiedTime().toInstant()));
         } catch (RuntimeException e) {
             return Optional.empty();
         }

@@ -1,9 +1,8 @@
 package com.qlikview.mcp.tools;
 
 import com.qlikview.mcp.analysis.DataSourceParser;
-import com.qlikview.mcp.analysis.ScriptReader;
+import com.qlikview.mcp.gateway.QlikViewGateway;
 import com.qlikview.mcp.guard.DocumentPathGuard;
-import com.qlikview.mcp.guard.GuardException;
 import com.qlikview.mcp.guard.OutputLimiter;
 import com.qlikview.mcp.guard.SecretRedactor;
 import lombok.RequiredArgsConstructor;
@@ -15,12 +14,14 @@ import java.nio.file.Path;
 import java.util.List;
 
 /**
- * Returns a document's data sources, derived by parsing its load script: connection statements
- * (with credentials redacted - see {@code connectionString} below), files referenced in
- * {@code FROM} clauses with their format specifications, {@code $(Include=...)}/
- * {@code $(Must_Include=...)} references, and the {@code BINARY} statement's source document, if
- * present. This is a best-effort text parse, not an evaluation of the script - a source path
- * built from a variable is returned as the literal, unevaluated text.
+ * Returns a document's data sources, derived by parsing its load script read from a running
+ * QlikView Desktop instance: connection statements (with credentials redacted - see
+ * {@code connectionString} below), files referenced in {@code FROM} clauses with their format
+ * specifications, {@code $(Include=...)}/{@code $(Must_Include=...)} references, and the
+ * {@code BINARY} statement's source document, if present. This is a best-effort text parse, not
+ * an evaluation of the script - a source path built from a variable is returned as the literal,
+ * unevaluated text. Requires QlikView Desktop installed, licensed, and running, with the document
+ * open or reachable, at the moment the tool is called.
  * <p>
  * {@code connections}, {@code fileSources}, and {@code includes} are each capped at {@code
  * qlikview.output.max-items} independently; a script with more of any one of them than that
@@ -31,7 +32,7 @@ import java.util.List;
 public class GetDataSourcesTool {
 
     private final DocumentPathGuard pathGuard;
-    private final ScriptReader scriptReader;
+    private final QlikViewGateway gateway;
     private final DataSourceParser dataSourceParser;
     private final SecretRedactor secretRedactor;
     private final OutputLimiter outputLimiter;
@@ -65,17 +66,15 @@ public class GetDataSourcesTool {
 
     @McpTool(
         name = "get_data_sources",
-        description = "Get a QlikView document's data sources, derived from its load script: connection statements, "
-            + "FROM-clause file references, includes, and the BINARY statement's source document",
+        description = "Get a QlikView document's data sources, derived from its load script read from a running "
+            + "QlikView Desktop instance: connection statements, FROM-clause file references, includes, and the "
+            + "BINARY statement's source document",
         generateOutputSchema = true,
         annotations = @McpTool.McpAnnotations(readOnlyHint = true, destructiveHint = false, idempotentHint = true))
     public DataSourcesSummary getDataSources(
             @McpToolParam(description = "Absolute path to the .qvw/.qvf document", required = true) String document) {
         Path resolved = pathGuard.resolve(document);
-        String script = scriptReader.readScript(resolved).orElseThrow(() -> new GuardException(
-            "No -prj export found for this document. Create a folder named '"
-                + resolved.getFileName() + "-prj' next to it and save the document in "
-                + "QlikView Desktop, then try again."));
+        String script = gateway.getScript(resolved);
 
         DataSourceParser.DataSources sources = dataSourceParser.parse(script);
         List<ConnectionSummary> connections = sources.connections().stream()

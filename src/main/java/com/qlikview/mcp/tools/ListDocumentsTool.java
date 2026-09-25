@@ -25,7 +25,7 @@ public class ListDocumentsTool {
     /**
      * One listed document, as returned to the MCP client.
      */
-    public record DocumentSummary(String name, String path, long sizeBytes, Instant modifiedAt, boolean hasPrjFolder) { }
+    public record DocumentSummary(String name, String path, long sizeBytes, Instant modifiedAt) { }
 
     @McpTool(
         name = "list_documents",
@@ -34,7 +34,7 @@ public class ListDocumentsTool {
         annotations = @McpTool.McpAnnotations(readOnlyHint = true, destructiveHint = false, idempotentHint = true))
     public List<DocumentSummary> listDocuments() {
         List<DocumentSummary> documents = documentScanner.listDocuments().stream()
-            .map(d -> new DocumentSummary(d.name(), d.path().toString(), d.sizeBytes(), d.modifiedAt(), d.hasPrjFolder()))
+            .map(d -> new DocumentSummary(d.name(), d.path().toString(), d.sizeBytes(), d.modifiedAt()))
             .toList();
         return outputLimiter.limitList(documents).items();
     }

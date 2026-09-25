@@ -32,24 +32,6 @@ class ListDocumentsToolTest {
     }
 
     @Test
-    void reportsPrjFolderPresence() throws IOException {
-        Files.createFile(tempDir.resolve("report.qvw"));
-        Files.createDirectory(tempDir.resolve("report-prj"));
-        Files.createFile(tempDir.resolve("other.qvw"));
-
-        List<ListDocumentsTool.DocumentSummary> result = toolWithMaxItems(1000).listDocuments();
-
-        assertThat(result)
-            .filteredOn(d -> d.name().equals("report.qvw"))
-            .extracting(ListDocumentsTool.DocumentSummary::hasPrjFolder)
-            .containsExactly(true);
-        assertThat(result)
-            .filteredOn(d -> d.name().equals("other.qvw"))
-            .extracting(ListDocumentsTool.DocumentSummary::hasPrjFolder)
-            .containsExactly(false);
-    }
-
-    @Test
     void returnsEmptyListWhenNoDocumentsFound() {
         assertThat(toolWithMaxItems(1000).listDocuments()).isEmpty();
     }

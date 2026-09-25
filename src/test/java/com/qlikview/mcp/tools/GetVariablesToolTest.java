@@ -1,26 +1,19 @@
 package com.qlikview.mcp.tools;
 
-import com.qlikview.mcp.analysis.ScriptReader;
-import com.qlikview.mcp.analysis.VariableParser;
 import com.qlikview.mcp.config.QlikViewProperties;
 import com.qlikview.mcp.gateway.QlikViewGateway;
 import com.qlikview.mcp.guard.DocumentPathGuard;
-import com.qlikview.mcp.guard.GuardException;
 import com.qlikview.mcp.guard.OutputLimiter;
 import com.qlikview.mcp.guard.SecretRedactor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -29,110 +22,75 @@ class GetVariablesToolTest {
     @TempDir
     Path tempDir;
 
-    private final ScriptReader scriptReader = new ScriptReader();
-    private final VariableParser variableParser = new VariableParser();
     private final QlikViewGateway gateway = mock(QlikViewGateway.class);
     private final SecretRedactor secretRedactor = new SecretRedactor();
     private GetVariablesTool tool;
 
     @BeforeEach
     void setUp() {
-        tool = new GetVariablesTool(guard(), scriptReader, variableParser, gateway, secretRedactor, outputLimiter());
+        tool = new GetVariablesTool(guard(), gateway, secretRedactor, outputLimiter());
     }
 
     @Test
-    void defaultsToStaticScriptVariables() throws IOException {
-        Path document = writeDocumentWithScript("SET vLimit = 10;\nLET vToday = Today();");
-
-        List<GetVariablesTool.VariableSummary> result = tool.getVariables(document.toString(), null, null);
-
-        assertThat(result).containsExactlyInAnyOrder(
-            new GetVariablesTool.VariableSummary("vLimit", "10", false, false, false),
-            new GetVariablesTool.VariableSummary("vToday", "Today()", true, false, false));
-    }
-
-    @Test
-    void liveTrueReadsFromGatewayInstead() throws IOException {
-        Path document = writeDocumentWithScript("SET vLimit = 10;");
+    void readsVariablesFromGateway() {
+        Path document = tempDir.resolve("report.qvw");
         when(gateway.getVariables(document)).thenReturn(new QlikViewGateway.VariableDescription[]{
             new QlikViewGateway.VariableDescription("vLimit", "42", false),
             new QlikViewGateway.VariableDescription("ThousandSep", ",", true)
         });
 
-        List<GetVariablesTool.VariableSummary> result = tool.getVariables(document.toString(), null, true);
+        List<GetVariablesTool.VariableSummary> result = tool.getVariables(document.toString(), null);
 
         assertThat(result).containsExactlyInAnyOrder(
-            new GetVariablesTool.VariableSummary("vLimit", "42", false, false, false),
-            new GetVariablesTool.VariableSummary("ThousandSep", ",", false, true, false));
+            new GetVariablesTool.VariableSummary("vLimit", "42", false, false),
+            new GetVariablesTool.VariableSummary("ThousandSep", ",", true, false));
     }
 
     @Test
-    void liveFalseExplicitlyUsesStaticSource() throws IOException {
-        Path document = writeDocumentWithScript("SET vLimit = 10;");
+    void flagsVariableWithSecretLikeName() {
+        Path document = tempDir.resolve("report.qvw");
+        when(gateway.getVariables(document)).thenReturn(new QlikViewGateway.VariableDescription[]{
+            new QlikViewGateway.VariableDescription("vPassword", "hunter2", false)
+        });
 
-        List<GetVariablesTool.VariableSummary> result = tool.getVariables(document.toString(), null, false);
-        assertThat(result).containsExactly(new GetVariablesTool.VariableSummary("vLimit", "10", false, false, false));
+        List<GetVariablesTool.VariableSummary> result = tool.getVariables(document.toString(), null);
+        assertThat(result).containsExactly(new GetVariablesTool.VariableSummary("vPassword", "hunter2", false, true));
     }
 
     @Test
-    void flagsVariableWithSecretLikeName() throws IOException {
-        Path document = writeDocumentWithScript("SET vPassword = 'hunter2';");
+    void doesNotFlagOrdinaryVariableName() {
+        Path document = tempDir.resolve("report.qvw");
+        when(gateway.getVariables(document)).thenReturn(new QlikViewGateway.VariableDescription[]{
+            new QlikViewGateway.VariableDescription("vLimit", "10", false)
+        });
 
-        List<GetVariablesTool.VariableSummary> result = tool.getVariables(document.toString(), null, null);
-        assertThat(result).containsExactly(new GetVariablesTool.VariableSummary("vPassword", "'hunter2'", false, false, true));
-    }
-
-    @Test
-    void doesNotFlagOrdinaryVariableName() throws IOException {
-        Path document = writeDocumentWithScript("SET vLimit = 10;");
-
-        List<GetVariablesTool.VariableSummary> result = tool.getVariables(document.toString(), null, null);
+        List<GetVariablesTool.VariableSummary> result = tool.getVariables(document.toString(), null);
         assertThat(result).extracting(GetVariablesTool.VariableSummary::possibleSecret).containsExactly(false);
     }
 
     @Test
-    void nameFilterAppliesToStaticVariables() throws IOException {
-        Path document = writeDocumentWithScript("SET vLimit = 10;\nSET vOther = 20;");
-
-        List<GetVariablesTool.VariableSummary> result = tool.getVariables(document.toString(), "limit", null);
-        assertThat(result).extracting(GetVariablesTool.VariableSummary::name).containsExactly("vLimit");
-    }
-
-    @Test
-    void nameFilterAppliesToLiveVariablesToo() throws IOException {
-        Path document = writeDocumentWithScript("SET vLimit = 10;");
+    void nameFilterAppliesCaseInsensitively() {
+        Path document = tempDir.resolve("report.qvw");
         when(gateway.getVariables(document)).thenReturn(new QlikViewGateway.VariableDescription[]{
-                new QlikViewGateway.VariableDescription("vLimit", "42", false),
-                new QlikViewGateway.VariableDescription("ThousandSep", ",", true)
+            new QlikViewGateway.VariableDescription("vLimit", "42", false),
+            new QlikViewGateway.VariableDescription("vOther", "1", false)
         });
 
-        List<GetVariablesTool.VariableSummary> result = tool.getVariables(document.toString(), "limit", true);
+        List<GetVariablesTool.VariableSummary> result = tool.getVariables(document.toString(), "limit");
         assertThat(result).extracting(GetVariablesTool.VariableSummary::name).containsExactly("vLimit");
     }
 
     @Test
-    void truncatesWhenVariableCountExceedsConfiguredLimit() throws IOException {
-        tool = new GetVariablesTool(guard(), scriptReader, variableParser, gateway, secretRedactor, outputLimiter(1));
-        Path document = writeDocumentWithScript("SET vLimit = 10;\nSET vOther = 20;");
-
-        List<GetVariablesTool.VariableSummary> result = tool.getVariables(document.toString(), null, null);
-        assertThat(result).hasSize(1);
-    }
-
-    @Test
-    void throwsWhenNoPrjExportExistsForStaticSource() {
-        Path document = tempDir.resolve("nodoc.qvw");
-
-        assertThatThrownBy(() -> tool.getVariables(document.toString(), null, null))
-            .isInstanceOf(GuardException.class)
-            .hasMessageContaining("No -prj export found");
-    }
-
-    private Path writeDocumentWithScript(String script) throws IOException {
+    void truncatesWhenVariableCountExceedsConfiguredLimit() {
+        tool = new GetVariablesTool(guard(), gateway, secretRedactor, outputLimiter(1));
         Path document = tempDir.resolve("report.qvw");
-        Path prjFolder = Files.createDirectory(tempDir.resolve("report-prj"));
-        Files.writeString(prjFolder.resolve("LoadScript.txt"), script, StandardCharsets.UTF_8);
-        return document;
+        when(gateway.getVariables(document)).thenReturn(new QlikViewGateway.VariableDescription[]{
+            new QlikViewGateway.VariableDescription("vLimit", "42", false),
+            new QlikViewGateway.VariableDescription("vOther", "1", false)
+        });
+
+        List<GetVariablesTool.VariableSummary> result = tool.getVariables(document.toString(), null);
+        assertThat(result).hasSize(1);
     }
 
     private DocumentPathGuard guard() {
