@@ -2,6 +2,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Java 21](https://img.shields.io/badge/Java-21-orange.svg)](https://www.oracle.com/java/technologies/downloads/#java21)
 [![Spring Boot 4](https://img.shields.io/badge/Spring%20Boot-4.0-6DB33F.svg)](https://spring.io/projects/spring-boot)
+[![Platform: Windows](https://img.shields.io/badge/platform-Windows-0078D6.svg)](#requirements)
 
 A read-only [MCP](https://modelcontextprotocol.io) server that lets AI assistants (Claude Code,
 Claude Desktop, GitHub Copilot, Cursor, or any other MCP client) inspect a running QlikView Desktop
@@ -44,8 +45,8 @@ document open or reachable, at the moment a tool is called.
 - **Reaches one machine only.** COM automation only talks to a QlikView Desktop instance in the
   same interactive Windows session as the server process. There's no shared instance for a team -
   each person runs their own server next to their own QlikView license.
-- **Windows-only.** COM automation is driven from a PowerShell worker process. Compiling and
-  starting the server don't require Windows, but no tool call can succeed without it.
+- **Windows-only.** COM automation only exists on Windows. Compiling and starting the server
+  don't require Windows, but no tool call can succeed without it.
 - **Secret redaction is pattern-based, not guaranteed.** `get_script` and `get_data_sources` mask
   credential-shaped `key=value` pairs (`PWD=`, `UID=`, `Password=`, ...); `get_variables` flags
   (doesn't withhold) variables whose name suggests a secret. A credential embedded some other way
@@ -56,7 +57,7 @@ document open or reachable, at the moment a tool is called.
 
 ## Requirements
 
-- Windows, with `powershell.exe` on PATH
+- Windows
 - QlikView Desktop, installed, licensed, and running, with the document open or reachable
 - Java 21 - skip this if using `run-server.bat` from a [release](../../releases/latest), which
   downloads a private copy automatically if none is found
@@ -65,7 +66,9 @@ document open or reachable, at the moment a tool is called.
 ## Usage
 
 1. **Set `qlikview.roots`** to the folder(s) containing your documents (see
-   [Configuration](#configuration)) - every tool call is rejected until this is set.
+   [Configuration](#configuration)). This is the allowlist of folders a document path is allowed
+   to resolve under - it stops an MCP client from pointing a tool at an arbitrary file on your
+   machine, not just a config nicety. Every tool call is rejected until this is set.
 2. **Register the server with your MCP client** (see [Building and running](#building-and-running))
    and call a tool with an absolute document path:
 
@@ -118,13 +121,17 @@ environment variable added to that client's own MCP server configuration.
 
 | Property | Default | Purpose |
 |---|---|---|
-| `qlikview.roots` | *(empty)* | Comma-separated list of folders a document path must resolve under. Required - if empty, every tool call is rejected. Set via `QLIKVIEW_MCP_ROOTS` |
+| `qlikview.roots` | *(empty)* | Security allowlist: comma-separated folders a document path must resolve under before any tool call reaches QlikView. Required - if empty, every tool call is rejected. Set via `QLIKVIEW_MCP_ROOTS` |
 | `qlikview.output.max-chars` | `200000` | Caps free-text response size (`evaluate`, `get_script`) before truncating |
 | `qlikview.output.max-items` | `500` | Caps how many entries any list a tool returns may contain before truncating |
-| `qlikview.call.timeout` | `15s` | Maximum time a single live (COM) call may run before the worker process is force-killed |
+| `qlikview.call.timeout` | `15s` | Maximum time a single live (COM) call may run before it is abandoned as stuck |
 
-`qlikview.roots` has a dedicated environment variable because its empty default makes the server
-unusable. All properties can also be set the usual Spring Boot ways: a JVM system property
+`qlikview.roots` defaults to empty and rejects everything until set, rather than defaulting to
+"anywhere" - an AI assistant driving this server should only ever be able to reach the documents
+you explicitly opted in, never an arbitrary path it decides to try. It has a dedicated environment
+variable for exactly this reason: an empty-by-default, security-relevant setting needs to be easy
+to set correctly, not easy to skip. All properties can also be set the usual Spring Boot ways: a
+JVM system property
 (`-Dqlikview.call.timeout=30s`), an environment variable via relaxed binding
 (`QLIKVIEW_CALL_TIMEOUT=30s`), or your own `application.properties` override.
 
