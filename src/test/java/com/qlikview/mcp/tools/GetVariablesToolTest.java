@@ -39,7 +39,7 @@ class GetVariablesToolTest {
             new QlikViewGateway.VariableDescription("ThousandSep", ",", true)
         });
 
-        List<GetVariablesTool.VariableSummary> result = tool.getVariables(document.toString(), null);
+        List<GetVariablesTool.VariableSummary> result = tool.getVariables(document.toString(), null).variables();
 
         assertThat(result).containsExactlyInAnyOrder(
             new GetVariablesTool.VariableSummary("vLimit", "42", false, false),
@@ -53,7 +53,7 @@ class GetVariablesToolTest {
             new QlikViewGateway.VariableDescription("vPassword", "hunter2", false)
         });
 
-        List<GetVariablesTool.VariableSummary> result = tool.getVariables(document.toString(), null);
+        List<GetVariablesTool.VariableSummary> result = tool.getVariables(document.toString(), null).variables();
         assertThat(result).containsExactly(new GetVariablesTool.VariableSummary("vPassword", "hunter2", false, true));
     }
 
@@ -64,7 +64,7 @@ class GetVariablesToolTest {
             new QlikViewGateway.VariableDescription("vLimit", "10", false)
         });
 
-        List<GetVariablesTool.VariableSummary> result = tool.getVariables(document.toString(), null);
+        List<GetVariablesTool.VariableSummary> result = tool.getVariables(document.toString(), null).variables();
         assertThat(result).extracting(GetVariablesTool.VariableSummary::possibleSecret).containsExactly(false);
     }
 
@@ -76,7 +76,7 @@ class GetVariablesToolTest {
             new QlikViewGateway.VariableDescription("vOther", "1", false)
         });
 
-        List<GetVariablesTool.VariableSummary> result = tool.getVariables(document.toString(), "limit");
+        List<GetVariablesTool.VariableSummary> result = tool.getVariables(document.toString(), "limit").variables();
         assertThat(result).extracting(GetVariablesTool.VariableSummary::name).containsExactly("vLimit");
     }
 
@@ -89,7 +89,7 @@ class GetVariablesToolTest {
             new QlikViewGateway.VariableDescription("vOther", "1", false)
         });
 
-        List<GetVariablesTool.VariableSummary> result = tool.getVariables(document.toString(), null);
+        List<GetVariablesTool.VariableSummary> result = tool.getVariables(document.toString(), null).variables();
         assertThat(result).hasSize(1);
     }
 

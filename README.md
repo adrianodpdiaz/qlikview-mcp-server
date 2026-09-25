@@ -51,7 +51,6 @@ document open or reachable, at the moment a tool is called.
   credential-shaped `key=value` pairs (`PWD=`, `UID=`, `Password=`, ...); `get_variables` flags
   (doesn't withhold) variables whose name suggests a secret. A credential embedded some other way
   won't be caught - treat output as likely safe, not guaranteed safe.
-- **QlikView Desktop only** - no Qlik Sense support (different product, different API).
 - **Section Access is unverified.** Whether a Section-Access-protected document returns
   silently-reduced data, blocks, or hits the call timeout hasn't been tested.
 

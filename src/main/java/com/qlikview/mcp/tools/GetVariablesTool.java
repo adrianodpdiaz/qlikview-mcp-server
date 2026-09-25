@@ -42,13 +42,18 @@ public class GetVariablesTool {
      */
     public record VariableSummary(String name, String value, boolean isSystem, boolean possibleSecret) { }
 
+    /**
+     * A document's variables, after {@code nameFilter} and truncation are applied.
+     */
+    public record VariablesSummary(List<VariableSummary> variables) { }
+
     @McpTool(
             name = "get_variables",
             description = "Get a QlikView document's variables as currently held in memory by a running QlikView "
                 + "Desktop instance. Variables whose name suggests a credential are flagged, not withheld.",
             generateOutputSchema = true,
             annotations = @McpTool.McpAnnotations(readOnlyHint = true, destructiveHint = false, idempotentHint = false))
-    public List<VariableSummary> getVariables(
+    public VariablesSummary getVariables(
             @McpToolParam(description = "Absolute path to the .qvw/.qvf document", required = true) String document,
             @McpToolParam(description = "Only return variables whose name contains this text (case-insensitive)", required = false) String nameFilter) {
         Path resolved = pathGuard.resolve(document);
@@ -59,7 +64,7 @@ public class GetVariablesTool {
             .filter(v -> matchesFilter(v.name(), nameFilter))
             .toList();
 
-        return outputLimiter.limitList(variables).items();
+        return new VariablesSummary(outputLimiter.limitList(variables).items());
     }
 
     private static boolean matchesFilter(String name, String nameFilter) {
