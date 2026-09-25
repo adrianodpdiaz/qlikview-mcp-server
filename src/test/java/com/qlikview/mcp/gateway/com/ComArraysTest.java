@@ -41,9 +41,8 @@ class ComArraysTest {
 
     @Test
     void toStringArrayUnpacksRealSafeArrayOfStrings() {
-        SAFEARRAY.ByReference array = SAFEARRAY.createSafeArray(
-            new com.sun.jna.platform.win32.WTypes.VARTYPE(Variant.VT_BSTR), 3);
-        try {
+        try (SAFEARRAY.ByReference array = SAFEARRAY.createSafeArray(
+            new com.sun.jna.platform.win32.WTypes.VARTYPE(Variant.VT_BSTR), 3)) {
             array.putElement("first", 0);
             array.putElement("second", 1);
             array.putElement("third", 2);
@@ -51,20 +50,15 @@ class ComArraysTest {
             String[] result = ComArrays.toStringArray(array);
 
             assertThat(result).containsExactly("first", "second", "third");
-        } finally {
-            array.close();
         }
     }
 
     @Test
     void toStringArrayReturnsEmptyArrayForZeroLengthSafeArray() {
-        SAFEARRAY.ByReference array = SAFEARRAY.createSafeArray(
-            new com.sun.jna.platform.win32.WTypes.VARTYPE(Variant.VT_BSTR), 0);
-        try {
+        try (SAFEARRAY.ByReference array = SAFEARRAY.createSafeArray(
+            new com.sun.jna.platform.win32.WTypes.VARTYPE(Variant.VT_BSTR), 0)) {
             String[] result = ComArrays.toStringArray(array);
             assertThat(result).isEmpty();
-        } finally {
-            array.close();
         }
     }
 
@@ -76,17 +70,14 @@ class ComArraysTest {
                 Dictionary dictionary = factory.createObject(Dictionary.class);
                 Dispatch dispatch = (Dispatch) dictionary.getRawDispatch();
 
-                SAFEARRAY.ByReference array = SAFEARRAY.createSafeArray(
-                    new com.sun.jna.platform.win32.WTypes.VARTYPE(Variant.VT_DISPATCH), 1);
-                try {
+                try (SAFEARRAY.ByReference array = SAFEARRAY.createSafeArray(
+                    new com.sun.jna.platform.win32.WTypes.VARTYPE(Variant.VT_DISPATCH), 1)) {
                     array.putElement(dispatch, 0);
 
                     List<Dictionary> result = ComArrays.toDispatchArray(array, Dictionary.class, factory);
 
                     assertThat(result).hasSize(1);
-                    assertThat(result.get(0).getRawDispatch()).isNotNull();
-                } finally {
-                    array.close();
+                    assertThat(result.getFirst().getRawDispatch()).isNotNull();
                 }
                 return null;
             });
