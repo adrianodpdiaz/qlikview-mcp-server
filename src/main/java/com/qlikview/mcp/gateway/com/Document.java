@@ -4,7 +4,7 @@ import com.sun.jna.platform.win32.COM.util.annotation.ComMethod;
 
 /**
  * A QlikView document, as returned by {@link QlikView#activeDocument()} or
- * {@link QlikView#openDoc}. Mirrors {@code $doc} in {@code qlikview-worker.ps1}.
+ * {@link QlikView#openDoc}.
  */
 public interface Document {
 

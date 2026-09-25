@@ -15,8 +15,7 @@ import java.util.List;
  * than a {@code Count}/{@code Item(i)}-style collection object. JNA's declared-return-type
  * conversion resolves such a member to a raw {@link SAFEARRAY} when the interface method is
  * declared {@code Object} (see the JNA COM interfaces in this package for which members these
- * are) - this class unpacks that SAFEARRAY into a plain Java array/list, the equivalent of
- * PowerShell's {@code @(...)} array coercion in {@code qlikview-worker.ps1}.
+ * are) - this class unpacks that SAFEARRAY into a plain Java array/list.
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class ComArrays {

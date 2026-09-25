@@ -5,9 +5,8 @@ import com.sun.jna.platform.win32.COM.util.annotation.ComProperty;
 
 /**
  * Return type of {@link Document#getVariableDescriptions()}. A QlikView collection object -
- * indexed access via {@code Item(i)} up to {@code Count}, mirroring the {@code for} loop in
- * {@code qlikview-worker.ps1}'s {@code getVariables} case rather than any Java-side array/list
- * conversion (QlikView's own collections are not SAFEARRAYs).
+ * indexed access via {@code Item(i)} up to {@code Count} (QlikView's own collections are not
+ * SAFEARRAYs, so no Java-side array/list conversion applies here).
  */
 public interface VariableDescriptions {
 

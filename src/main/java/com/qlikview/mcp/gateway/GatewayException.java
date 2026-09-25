@@ -1,8 +1,7 @@
 package com.qlikview.mcp.gateway;
 
 /**
- * Wraps any failure to complete a QlikView gateway call: timeout, worker process failure, or a
- * QlikView/COM-side error.
+ * Wraps any failure to complete a QlikView gateway call: timeout, or a QlikView/COM-side error.
  */
 public class GatewayException extends RuntimeException {
 

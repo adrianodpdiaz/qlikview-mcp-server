@@ -22,18 +22,15 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Read-only bridge to a running QlikView Desktop instance via in-process COM automation (JNA),
- * rather than a PowerShell subprocess - see {@code JNA_MIGRATION_STEPS.md} for why. Every call
- * this class makes runs on {@link Factory}'s dedicated COM thread and is bounded by
+ * Read-only bridge to a running QlikView Desktop instance via in-process COM automation (JNA).
+ * Every call this class makes runs on {@link Factory}'s dedicated COM thread and is bounded by
  * {@code qlikview.call.timeout} (enforced by JNA's {@link ComThread#execute}, not code here).
  * <p>
- * A COM apartment thread cannot be force-killed the way the old PowerShell subprocess could: if a
- * call hangs (QlikView's COM layer does not always fail fast - see spike 0.9), the underlying
- * thread stays stuck forever, and every future call on the same {@link Factory} would queue
- * behind it. To recover, a timeout discards the current {@link Factory} entirely and lazily
- * builds a fresh one (fresh COM thread, fresh {@code CoInitializeEx}) for the next call - the
- * stuck thread is abandoned, not reused, matching how a hung PowerShell subprocess used to be
- * force-killed rather than reused.
+ * A COM apartment thread cannot be force-killed: if a call hangs (QlikView's COM layer does not
+ * always fail fast - see spike 0.9), the underlying thread stays stuck forever, and every future
+ * call on the same {@link Factory} would queue behind it. To recover, a timeout discards the
+ * current {@link Factory} entirely and lazily builds a fresh one (fresh COM thread, fresh
+ * {@code CoInitializeEx}) for the next call - the stuck thread is simply abandoned, never reused.
  */
 public class JnaQlikViewGateway implements QlikViewGateway {
 
@@ -138,8 +135,7 @@ public class JnaQlikViewGateway implements QlikViewGateway {
             List<String> expressions = new ArrayList<>();
 
             // Only chart-type objects (GraphProperties) expose Dimensions/Expressions - other
-            // object types (current-selections box, search object, ...) throw when accessed,
-            // matching qlikview-worker.ps1's try/catch around the same COM calls.
+            // object types (current-selections box, search object, ...) throw when accessed.
             try {
                 ChartProperties chartProperties = found.getProperties();
                 ChartDimensions dims = chartProperties.getDimensions();

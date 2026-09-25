@@ -3,8 +3,7 @@ package com.qlikview.mcp.gateway.com;
 import com.sun.jna.platform.win32.COM.util.annotation.ComMethod;
 
 /**
- * One sheet, as returned within {@link Document#getSheetsAll()}. Mirrors {@code $sheet} in
- * {@code qlikview-worker.ps1}'s {@code getSheets}/{@code getObject} cases.
+ * One sheet, as returned within {@link Document#getSheetsAll()}.
  */
 public interface Sheet {
 

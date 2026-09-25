@@ -3,9 +3,7 @@ package com.qlikview.mcp.gateway.com;
 import com.sun.jna.platform.win32.COM.util.annotation.ComProperty;
 
 /**
- * One item of {@link FieldDescriptions}. Mirrors {@code $fd.Name}/{@code .Cardinal}/
- * {@code .IsSystem}/{@code .IsNumeric}/{@code .SrcTables} in {@code qlikview-worker.ps1}'s
- * {@code getDataModel} case.
+ * One item of {@link FieldDescriptions}.
  * <p>
  * {@code SrcTables} is a native array (a {@code VT_ARRAY} VARIANT, unlike the {@code Count}/
  * {@code Item()}-style collections elsewhere in this package), so it is declared {@code Object}

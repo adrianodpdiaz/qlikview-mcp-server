@@ -5,8 +5,7 @@ import com.sun.jna.platform.win32.COM.util.annotation.ComProperty;
 
 /**
  * Return type of {@link ChartProperties#getDimensions()}. A QlikView collection object - indexed
- * access via {@code Item(i)} up to {@code Count}, mirroring {@code qlikview-worker.ps1}'s
- * {@code getObject} case.
+ * access via {@code Item(i)} up to {@code Count}.
  */
 public interface ChartDimensions {
 

@@ -63,7 +63,6 @@ class OutputLimiterTest {
     private OutputLimiter limiterWith(int maxChars, int maxItems) {
         QlikViewProperties properties = new QlikViewProperties(
             List.of(),
-            new QlikViewProperties.Worker("unused"),
             new QlikViewProperties.Call(Duration.ofSeconds(1)),
             new QlikViewProperties.Output(maxChars, maxItems));
         return new OutputLimiter(properties);

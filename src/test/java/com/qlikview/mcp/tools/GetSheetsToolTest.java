@@ -73,7 +73,6 @@ class GetSheetsToolTest {
     private QlikViewProperties properties(int maxItems) {
         return new QlikViewProperties(
             List.of(tempDir.toString()),
-            new QlikViewProperties.Worker("unused"),
             new QlikViewProperties.Call(Duration.ofSeconds(1)),
             new QlikViewProperties.Output(1000, maxItems));
     }

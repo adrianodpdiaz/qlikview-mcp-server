@@ -3,9 +3,8 @@ package com.qlikview.mcp.gateway.com;
 import com.sun.jna.platform.win32.COM.util.annotation.ComProperty;
 
 /**
- * Return type of {@link ChartDimension#getPseudoDef()}. Mirrors
- * {@code .PseudoDef.Name} in {@code qlikview-worker.ps1}'s {@code getObject} case - resolves a
- * dimension definition to the real field name it groups by.
+ * Return type of {@link ChartDimension#getPseudoDef()} - resolves a dimension definition to the
+ * real field name it groups by.
  */
 public interface PseudoDef {
 

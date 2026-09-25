@@ -49,7 +49,6 @@ class ListDocumentsToolTest {
     private ListDocumentsTool toolWithMaxItems(int maxItems) {
         QlikViewProperties properties = new QlikViewProperties(
             List.of(tempDir.toString()),
-            new QlikViewProperties.Worker("unused"),
             new QlikViewProperties.Call(Duration.ofSeconds(1)),
             new QlikViewProperties.Output(1000, maxItems));
         return new ListDocumentsTool(new DocumentScanner(properties), new OutputLimiter(properties));
