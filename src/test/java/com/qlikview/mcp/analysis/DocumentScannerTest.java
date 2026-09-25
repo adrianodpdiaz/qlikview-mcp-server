@@ -59,7 +59,6 @@ class DocumentScannerTest {
     private QlikViewProperties propertiesWithRoots(String... roots) {
         return new QlikViewProperties(
             List.of(roots),
-            new QlikViewProperties.Worker("unused"),
             new QlikViewProperties.Call(Duration.ofSeconds(1)),
             new QlikViewProperties.Output(1000, 1000));
     }

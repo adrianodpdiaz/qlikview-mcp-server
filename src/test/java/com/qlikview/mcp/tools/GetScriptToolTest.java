@@ -70,7 +70,6 @@ class GetScriptToolTest {
     private QlikViewProperties properties(int maxChars) {
         return new QlikViewProperties(
             List.of(tempDir.toString()),
-            new QlikViewProperties.Worker("unused"),
             new QlikViewProperties.Call(Duration.ofSeconds(1)),
             new QlikViewProperties.Output(maxChars, 1000));
     }

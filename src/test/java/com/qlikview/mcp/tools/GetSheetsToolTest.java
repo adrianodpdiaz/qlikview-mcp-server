@@ -38,7 +38,7 @@ class GetSheetsToolTest {
             })
         });
 
-        List<GetSheetsTool.SheetSummary> result = tool.getSheets(document.toString());
+        List<GetSheetsTool.SheetSummary> result = tool.getSheets(document.toString()).sheets();
 
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().caption()).isEqualTo("Main");
@@ -54,7 +54,7 @@ class GetSheetsToolTest {
             new QlikViewGateway.SheetInfo("Second", new QlikViewGateway.SheetObjectInfo[0])
         });
 
-        List<GetSheetsTool.SheetSummary> result = tool.getSheets(document.toString());
+        List<GetSheetsTool.SheetSummary> result = tool.getSheets(document.toString()).sheets();
         assertThat(result).hasSize(1);
     }
 
@@ -73,7 +73,6 @@ class GetSheetsToolTest {
     private QlikViewProperties properties(int maxItems) {
         return new QlikViewProperties(
             List.of(tempDir.toString()),
-            new QlikViewProperties.Worker("unused"),
             new QlikViewProperties.Call(Duration.ofSeconds(1)),
             new QlikViewProperties.Output(1000, maxItems));
     }

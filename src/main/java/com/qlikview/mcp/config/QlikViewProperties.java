@@ -13,18 +13,12 @@ import java.util.List;
 @ConfigurationProperties(prefix = "qlikview")
 public record QlikViewProperties(
         List<String> roots,
-        Worker worker,
         Call call,
         Output output
 ) {
 
     /**
-     * Location of the PowerShell worker script the gateway launches for each call.
-     */
-    public record Worker(String script) { }
-
-    /**
-     * How long a single gateway call may run before the worker process is force-killed.
+     * How long a single gateway call may run before its COM thread is abandoned as stuck.
      */
     public record Call(Duration timeout) { }
 

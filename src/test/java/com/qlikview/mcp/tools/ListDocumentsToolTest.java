@@ -25,7 +25,7 @@ class ListDocumentsToolTest {
         Files.createFile(tempDir.resolve("dashboard.qvf"));
         Files.createFile(tempDir.resolve("notes.txt"));
 
-        List<ListDocumentsTool.DocumentSummary> result = toolWithMaxItems(1000).listDocuments();
+        List<ListDocumentsTool.DocumentSummary> result = toolWithMaxItems(1000).listDocuments().documents();
 
         assertThat(result).extracting(ListDocumentsTool.DocumentSummary::name)
             .containsExactlyInAnyOrder("report.qvw", "dashboard.qvf");
@@ -33,7 +33,7 @@ class ListDocumentsToolTest {
 
     @Test
     void returnsEmptyListWhenNoDocumentsFound() {
-        assertThat(toolWithMaxItems(1000).listDocuments()).isEmpty();
+        assertThat(toolWithMaxItems(1000).listDocuments().documents()).isEmpty();
     }
 
     @Test
@@ -41,7 +41,7 @@ class ListDocumentsToolTest {
         Files.createFile(tempDir.resolve("a.qvw"));
         Files.createFile(tempDir.resolve("b.qvw"));
 
-        List<ListDocumentsTool.DocumentSummary> result = toolWithMaxItems(1).listDocuments();
+        List<ListDocumentsTool.DocumentSummary> result = toolWithMaxItems(1).listDocuments().documents();
 
         assertThat(result).hasSize(1);
     }
@@ -49,7 +49,6 @@ class ListDocumentsToolTest {
     private ListDocumentsTool toolWithMaxItems(int maxItems) {
         QlikViewProperties properties = new QlikViewProperties(
             List.of(tempDir.toString()),
-            new QlikViewProperties.Worker("unused"),
             new QlikViewProperties.Call(Duration.ofSeconds(1)),
             new QlikViewProperties.Output(1000, maxItems));
         return new ListDocumentsTool(new DocumentScanner(properties), new OutputLimiter(properties));

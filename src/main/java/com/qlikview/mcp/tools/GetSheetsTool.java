@@ -39,13 +39,18 @@ public class GetSheetsTool {
     /** One object on a sheet: its id and type. */
     public record SheetObjectSummary(String objectId, String objectType) { }
 
+    /**
+     * A document's sheets, after truncation is applied.
+     */
+    public record SheetsSummary(List<SheetSummary> sheets) { }
+
     @McpTool(
         name = "get_sheets",
         description = "Get a QlikView document's sheets and the objects placed on each, from a running QlikView "
             + "Desktop instance",
         generateOutputSchema = true,
         annotations = @McpTool.McpAnnotations(readOnlyHint = true, destructiveHint = false, idempotentHint = false))
-    public List<SheetSummary> getSheets(
+    public SheetsSummary getSheets(
             @McpToolParam(description = "Absolute path to the .qvw/.qvf document", required = true) String document) {
         Path resolved = pathGuard.resolve(document);
         QlikViewGateway.SheetInfo[] sheets = gateway.getSheets(resolved);
@@ -57,6 +62,6 @@ public class GetSheetsTool {
                     .toList()))
             .toList();
 
-        return outputLimiter.limitList(summaries).items();
+        return new SheetsSummary(outputLimiter.limitList(summaries).items());
     }
 }

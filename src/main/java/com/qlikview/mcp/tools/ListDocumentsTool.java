@@ -27,15 +27,20 @@ public class ListDocumentsTool {
      */
     public record DocumentSummary(String name, String path, long sizeBytes, Instant modifiedAt) { }
 
+    /**
+     * The documents found under the allowlisted roots.
+     */
+    public record DocumentsSummary(List<DocumentSummary> documents) { }
+
     @McpTool(
         name = "list_documents",
         description = "List QlikView documents (.qvw/.qvf) found under the configured allowlisted folders",
         generateOutputSchema = true,
         annotations = @McpTool.McpAnnotations(readOnlyHint = true, destructiveHint = false, idempotentHint = true))
-    public List<DocumentSummary> listDocuments() {
+    public DocumentsSummary listDocuments() {
         List<DocumentSummary> documents = documentScanner.listDocuments().stream()
             .map(d -> new DocumentSummary(d.name(), d.path().toString(), d.sizeBytes(), d.modifiedAt()))
             .toList();
-        return outputLimiter.limitList(documents).items();
+        return new DocumentsSummary(outputLimiter.limitList(documents).items());
     }
 }
