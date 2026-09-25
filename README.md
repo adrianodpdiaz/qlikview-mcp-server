@@ -38,6 +38,12 @@ document open or reachable, at the moment a tool is called.
 | `get_data_sources` | Connection statements, `FROM`-clause file references, includes, and the `BINARY` statement's source document, parsed from the load script. Connection-string credentials are redacted |
 | `evaluate` | Evaluates an expression against current data/selections - the only way to get this |
 
+## Built with
+
+- **Java 21**
+- **[Spring Boot](https://spring.io/projects/spring-boot)** and **[Spring AI's MCP server support](https://docs.spring.io/spring-ai/reference/api/mcp/mcp-server-boot-starter-docs.html)** for the server itself and the MCP protocol layer.
+- **[JNA](https://github.com/java-native-access/jna)** (`jna-platform`) to talk to QlikView Desktop's Windows COM automation interface directly from the JVM - no PowerShell, no external script, no subprocess per call.
+
 ## Limitations
 
 - **Read-only.** No writing to documents, no reload, no macro execution - unreachable from tool
