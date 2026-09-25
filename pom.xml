@@ -13,7 +13,7 @@
 
     <groupId>com.qlikview</groupId>
     <artifactId>qlikview-mcp-server</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
     <name>qlikview-mcp-server</name>
     <description>Read-only MCP server providing access to QlikView Desktop documents for any MCP-capable client</description>
 
